@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reward Vault | Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --button-bg: #3b82f6;
+            --button-hover: #2563eb;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+        }
+
+        /* Header Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lang-select {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .badge {
+            background: var(--border-color);
+            color: var(--text-sub);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        /* Tab Bar Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            background-color: var(--card-bg);
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background-color: var(--button-bg);
+            color: white;
+        }
+
+        /* Card System */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .balance-label {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .task-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .task-desc {
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            width: 100%;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--button-hover);
+        }
+
+        /* Explainer Flow Box */
+        .flow-step {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+
+        .flow-step h4 {
+            margin: 0 0 4px 0;
+            font-size: 0.95rem;
+            color: var(--accent);
+        }
+
+        .flow-step p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Top Navigation -->
+        <div class="header">
+            <div class="logo">⚡ RewardVault</div>
+            <div class="header-controls">
+                <!-- Language Selector -->
+                <select id="langSelect" class="lang-select" onchange="changeLanguage(this.value)">
+                    <option value="en">🇬🇧 EN</option>
+                    <option value="ru">🇷🇺 RU</option>
+                    <option value="es">🇪🇸 ES</option>
+                </select>
+                <div class="badge"><span data-i18n="user_label">User</span>: {{ user.username }}</div>
+            </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-nav">
+            <button id="tab-dashboard" class="tab-btn active" onclick="switchTab('dashboard')" data-i18n="tab_dashboard">Dashboard</button>
+            <button id="tab-how-it-works" class="tab-btn" onclick="switchTab('how-it-works')" data-i18n="tab_how_it_works">How It Works</button>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Balance Card -->
+            <div class="card">
+                <div class="balance-label" data-i18n="balance_label">Available Balance</div>
+                <div class="balance-amount">${{ "%.2f"|format(user.balance) }}</div>
+            </div>
+
+            <!-- Task Card -->
+            <div class="card">
+                <div class="task-title" data-i18n="task_title">Watch Rewarded Ad</div>
+                <div class="task-desc" data-i18n="task_desc">Watch a 15-second promo video to credit $0.05 directly to your account.</div>
+                
+                <form action="/watch-ad" method="POST">
+                    <button type="submit" class="btn" data-i18n="btn_watch">Simulate Ad Completion (+$0.05)</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: HOW IT WORKS (TRANSPARENCY EXPLAINER) -->
+        <div id="how-it-works" class="tab-content">
+            <div class="card">
+                <div class="task-title" data-i18n="how_title">Where Does the Money Come From?</div>
+                <div class="task-desc" data-i18n="how_intro">
+                    We believe in 100% transparency. You aren't getting "free money"—you are getting paid for your actual time and attention. Here is how the loop works:
+                </div>
+
+                <div class="flow-step">
+                    <h4 data-i18n="step1_title">1. Advertisers Pay Us</h4>
+                    <p data-i18n="step1_desc">Companies pay ad networks to display video ads, apps, or surveys to reach real users.</p>
+                </div>
+
+                <div class="flow-step">
+                    <h4 data-i18n="step2_title">2. We Share the Payout</h4>
+                    <p data-i18n="step2_desc">Instead of keeping 100% of the revenue like standard websites, we keep ~30% to cover server costs and pass ~70% directly back to you.</p>
+                </div>
+
+                <div class="flow-step">
+                    <h4 data-i18n="step3_title">3. You Withdraw Real Cash</h4>
+                    <p data-i18n="step3_desc">Once your balance hits the minimum threshold, you can cash out straight to your crypto wallet or payment account.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts for Tab Switching & Language i18n -->
+    <script>
+        // Translations Dictionary
+        const translations = {
+            en: {
+                user_label: "User",
+                tab_dashboard: "Dashboard",
+                tab_how_it_works: "How It Works",
+                balance_label: "Available Balance",
+                task_title: "Watch Rewarded Ad",
+                task_desc: "Watch a 15-second promo video to credit $0.05 directly to your account.",
+                btn_watch: "Simulate Ad Completion (+$0.05)",
+                how_title: "Where Does the Money Come From?",
+                how_intro: "We believe in 100% transparency. You aren't getting 'free money'—you are getting paid for your actual time and attention. Here is how the loop works:",
+                step1_title: "1. Advertisers Pay Us",
+                step1_desc: "Companies pay ad networks to display video ads, apps, or surveys to reach real users.",
+                step2_title: "2. We Share the Payout",
+                step2_desc: "Instead of keeping 100% of the revenue like standard websites, we keep ~30% to cover server costs and pass ~70% directly back to you.",
+                step3_title: "3. You Withdraw Real Cash",
+                step3_desc: "Once your balance hits the minimum threshold, you can cash out straight to your crypto wallet or payment account."
+            },
+            ru: {
+                user_label: "Игрок",
+                tab_dashboard: "Панель",
+                tab_how_it_works: "Как это работает",
+                balance_label: "Доступный баланс",
+                task_title: "Смотреть рекламу",
+                task_desc: "Посмотрите 15-секундный промо-ролик, чтобы зачислить $0.05 прямо на ваш счет.",
+                btn_watch: "Симуляция просмотра (+$0.05)",
+                how_title: "Откуда берутся деньги?",
+                how_intro: "Мы за 100% прозрачность. Вы не получаете «бесплатные деньги» — вам платят за ваше время и внимание. Вот как работает система:",
+                step1_title: "1. Рекламодатели платят нам",
+                step1_desc: "Компании платят рекламным сетям за показ видео, приложений или опросов пользователям.",
+                step2_title: "2. Мы делимся доходом",
+                step2_desc: "Вместо того чтобы забирать 100% прибыли себе, мы оставляем ~30% на серверы, а ~70% отдаем вам.",
+                step3_title: "3. Вы выводите реальные деньги",
+                step3_desc: "Как только ваш баланс достигнет минимального порога, вы сможете вывести средства на свой кошелек."
+            },
+            es: {
+                user_label: "Usuario",
+                tab_dashboard: "Panel",
+                tab_how_it_works: "Cómo funciona",
+                balance_label: "Saldo disponible",
+                task_title: "Ver anuncio con recompensa",
+                task_desc: "Mira un video promocional de 15 segundos para acreditar $0.05 directamente a tu cuenta.",
+                btn_watch: "Simular ver anuncio (+$0.05)",
+                how_title: "¿De dónde viene el dinero?",
+                how_intro: "Creemos en la transparencia al 100%. No estás recibiendo 'dinero gratis', se te paga por tu tiempo y atención. Así funciona el sistema:",
+                step1_title: "1. Los anunciantes nos pagan",
+                step1_desc: "Las empresas pagan a las redes publicitarias para mostrar videos, aplicaciones o encuestas a usuarios reales.",
+                step2_title: "2. Compartimos el pago",
+                step2_desc: "En lugar de quedarnos con el 100% de los ingresos, nos quedamos con ~30% para costos de servidor y te pasamos ~70% directamente a ti.",
+                step3_title: "3. Retiras dinero real",
+                step3_desc: "Una vez que tu saldo alcance el límite mínimo, puedes cobrar directamente a tu billetera."
+            }
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        function changeLanguage(lang) {
+            // Save choice in browser storage
+            localStorage.setItem('preferred_lang', lang);
+            document.getElementById('langSelect').value = lang;
+
+            // Update all elements with data-i18n attributes
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+        }
+
+        // On Page Load: Restore user's saved language preference
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('preferred_lang') || 'en';
+            changeLanguage(savedLang);
+        });
+    </script>
+
+</body>
+</html>
