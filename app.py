@@ -1,640 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RewardVault | Earn Cash Watching Ads</title>
+import os
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "rewardvault_secret_key_123")
+
+DB_FILE = "database.db"
+
+def get_db():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with get_db() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                balance REAL DEFAULT 0.00
+            )
+        ''')
+        conn.commit()
+
+init_db()
+
+@app.route("/")
+def index():
+    user = {"id": 0, "username": "Guest", "balance": 0.00}
     
-    <!-- Monetag MultiTag Script (Zone 265489) -->
-    <script src="https://quge5.com/88/tag.min.js" data-zone="265489" async data-cfasync="false"></script>
-
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #10b981;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- TOP HEADER (Balance & Profile in Top Right) --- */
-        .top-header {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--card-border);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .brand-logo {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .brand-logo span {
-            color: var(--accent);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--card-border);
-            padding: 6px 14px;
-            border-radius: 20px;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .balance-pill {
-            background: var(--success);
-            color: #000;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 2px 10px;
-            border-radius: 12px;
-        }
-
-        .lang-select {
-            background: var(--card-bg);
-            color: var(--text-main);
-            border: 1px solid var(--card-border);
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .btn-auth-header {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.2s;
-        }
-
-        .btn-auth-header:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-logout {
-            background: #ef4444;
-        }
-
-        .btn-logout:hover {
-            background: #dc2626;
-        }
-
-        /* --- MAIN CONTAINER LAYOUT --- */
-        .app-container {
-            flex: 1;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* --- MOBILE LAYOUT (DEFAULT / STACKED) --- */
-        .mobile-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .mobile-tabs {
-            display: flex;
-            gap: 10px;
-            background: var(--card-bg);
-            padding: 6px;
-            border-radius: 10px;
-            border: 1px solid var(--card-border);
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .tab-btn.active {
-            background: var(--accent);
-            color: white;
-        }
-
-        /* --- PC DESKTOP LAYOUT (SIDEBAR + GRID) --- */
-        .pc-layout {
-            display: none;
-            grid-template-columns: 240px 1fr 300px;
-            gap: 24px;
-            align-items: start;
-        }
-
-        .pc-sidebar {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .sidebar-item {
-            padding: 12px 16px;
-            border-radius: 8px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.2s;
-        }
-
-        .sidebar-item.active, .sidebar-item:hover {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent);
-        }
-
-        .pc-widget-panel {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        /* --- CARDS & GENERAL UI --- */
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-            color: var(--text-main);
-        }
-
-        .card-desc {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        .btn-action {
-            width: 100%;
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-action:hover {
-            background: var(--accent-hover);
-        }
-
-        /* --- MODALS & OVERLAYS --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.88);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 32px;
-            width: 90%;
-            max-width: 420px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-dark);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            color: var(--text-main);
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        .form-control:focus {
-            border-color: var(--accent);
-        }
-
-        .timer-display {
-            font-size: 3.5rem;
-            font-weight: 900;
-            color: var(--accent);
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        /* --- RESPONSIVE MEDIA QUERIES (PC DETECTOR) --- */
-        @media (min-width: 992px) {
-            .mobile-tabs {
-                display: none;
-            }
-            .mobile-layout {
-                display: none;
-            }
-            .pc-layout {
-                display: grid;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- TOP HEADER -->
-    <header class="top-header">
-        <div class="brand-logo">
-            ⚡ Reward<span>Vault</span>
-        </div>
-
-        <div class="header-right">
-            <!-- Language Selector -->
-            <select id="langSelect" class="lang-select" onchange="changeLanguage(this.value)">
-                <option value="en">EN 🇺🇸</option>
-                <option value="ru">RU 🇷🇺</option>
-                <option value="es">ES 🇪🇸</option>
-            </select>
-
-            <!-- User Username & Balance Display (Top Right) -->
-            <div class="user-badge">
-                <span class="user-name">
-                    {% if user.username == 'The Pablo' %}👑 {% endif %}{{ user.username }}
-                </span>
-                <span class="balance-pill">${{ "%.2f"|format(user.balance) }}</span>
-            </div>
-
-            {% if user.id == 0 %}
-                <button class="btn-auth-header" onclick="openAuthModal('login')">Log In</button>
-            {% else %}
-                <a href="/logout" class="btn-auth-header btn-logout">Log Out</a>
-            {% endif %}
-        </div>
-    </header>
-
-    <!-- MAIN APP CONTAINER -->
-    <div class="app-container">
-
-        {% if user.id == 0 %}
-        <!-- GUEST WELCOME BANNER (PROMPTS LOGIN) -->
-        <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: var(--accent);">
-            <h3 class="card-title">Welcome to RewardVault!</h3>
-            <p class="card-desc">Log in or create a free profile to save your accumulated cash balance permanently on our servers.</p>
-            <div style="display: flex; gap: 12px;">
-                <button class="btn-action" style="max-width: 180px;" onclick="openAuthModal('login')">Log In</button>
-                <button class="btn-action" style="max-width: 180px; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="openAuthModal('register')">Register</button>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- MOBILE LAYOUT -->
-        <div class="mobile-layout">
-            <div class="mobile-tabs">
-                <button class="tab-btn active" onclick="switchTab('dashboard')" id="mtab-dashboard" data-i18n="tab_dashboard">Dashboard</button>
-                <button class="tab-btn" onclick="switchTab('how-it-works')" id="mtab-how-it-works" data-i18n="tab_how_it_works">How It Works</button>
-            </div>
-
-            <!-- Task View -->
-            <div id="view-dashboard" class="view-content">
-                <div class="card">
-                    <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
-                    <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                    <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
-                </div>
-            </div>
-
-            <!-- How It Works View -->
-            <div id="view-how-it-works" class="view-content" style="display: none;">
-                <div class="card">
-                    <h3 class="card-title" data-i18n="how_title">Where Does the Money Come From?</h3>
-                    <p class="card-desc" data-i18n="how_intro">We share ~70% of ad revenue directly back to users who view sponsored content.</p>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- PC DESKTOP LAYOUT -->
-        <div class="pc-layout">
-            
-            <!-- Left Sidebar Navigation -->
-            <div class="pc-sidebar">
-                <div class="sidebar-item active" id="pc-item-dashboard" onclick="switchTab('dashboard')">
-                    📊 <span data-i18n="tab_dashboard">Dashboard</span>
-                </div>
-                <div class="sidebar-item" id="pc-item-how-it-works" onclick="switchTab('how-it-works')">
-                    ❓ <span data-i18n="tab_how_it_works">How It Works</span>
-                </div>
-            </div>
-
-            <!-- Middle Content Area -->
-            <div class="pc-main-content">
-                <div id="pc-view-dashboard" class="view-content">
-                    <div class="card">
-                        <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
-                        <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                        <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
-                    </div>
-                </div>
-
-                <div id="pc-view-how-it-works" class="view-content" style="display: none;">
-                    <div class="card">
-                        <h3 class="card-title" data-i18n="how_title">Where Does the Money Come From?</h3>
-                        <p class="card-desc" data-i18n="how_intro">Advertisers pay us for video views. We retain 30% for hosting and pay out 70% to our users.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Widget Panel -->
-            <div class="pc-widget-panel">
-                <h4 style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px;">ACCOUNT PROFILE</h4>
-                <div style="background: var(--bg-dark); padding: 14px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--card-border);">
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">Current User</div>
-                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent); margin-top: 2px;">
-                        {% if user.username == 'The Pablo' %}👑 {% endif %}{{ user.username }}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Saved Balance</div>
-                    <div style="font-weight: 800; font-size: 1.25rem; color: var(--success);">${{ "%.2f"|format(user.balance) }}</div>
-                </div>
-                <div style="font-size: 0.85rem; color: var(--success); font-weight: 600;">● Monetag Ad Server Connected</div>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- LOGIN & REGISTRATION MODAL -->
-    <div id="authModal" class="modal-overlay">
-        <div class="modal-card">
-            <h3 id="authTitle" style="margin-bottom: 20px; font-size: 1.4rem; text-align: center;">Account Access</h3>
-            
-            <form id="authForm" method="POST" action="/login">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" class="form-control" required placeholder="Enter username">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" class="form-control" required placeholder="Enter password">
-                </div>
-                <button type="submit" class="btn-action" style="margin-top: 10px;">Submit</button>
-            </form>
-
-            <div style="margin-top: 20px; font-size: 0.9rem; text-align: center;">
-                <span id="authToggleText">Need an account?</span> 
-                <a href="javascript:void(0)" onclick="toggleAuthMode()" id="authToggleBtn" style="color: var(--accent); font-weight: bold; text-decoration: none;">Register</a>
-            </div>
-            
-            <div style="text-align: center; margin-top: 14px;">
-                <button onclick="closeAuthModal()" style="background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer;">Close window</button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- REWARDED AD TIMER MODAL -->
-    <div id="adModal" class="modal-overlay">
-        <div class="modal-card" style="text-align: center;">
-            <h3 data-i18n="ad_playing_title">Playing Rewarded Ad...</h3>
-            <p data-i18n="ad_playing_desc" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 8px;">Please view the ad tab until the timer hits 0.</p>
-            <div id="adTimer" class="timer-display">15</div>
-            <div style="font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Monetag Live Stream</div>
-        </div>
-    </div>
-
-
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        let currentAuthMode = 'login';
-        let adCountdown;
-
-        const translations = {
-            en: {
-                tab_dashboard: "Dashboard",
-                tab_how_it_works: "How It Works",
-                task_title: "Watch Rewarded Ad",
-                task_desc: "Watch a short promo stream to credit $0.05 directly to your balance.",
-                btn_watch: "Watch 15s Ad (+$0.05)",
-                how_title: "Where Does the Money Come From?",
-                how_intro: "We share ~70% of ad revenue directly back to users who view sponsored content.",
-                ad_playing_title: "Playing Rewarded Ad...",
-                ad_playing_desc: "Please view the ad tab until the timer hits 0."
-            },
-            ru: {
-                tab_dashboard: "Панель",
-                tab_how_it_works: "Как это работает",
-                task_title: "Смотреть рекламу",
-                task_desc: "Посмотрите 15-секундный ролик, чтобы зачислить $0.05 на баланс.",
-                btn_watch: "Смотреть рекламу 15с (+$0.05)",
-                how_title: "Откуда берутся деньги?",
-                how_intro: "Мы делимся ~70% дохода от рекламы с пользователями.",
-                ad_playing_title: "Просмотр рекламы...",
-                ad_playing_desc: "Не закрывайте вкладку, пока таймер не закончится."
-            },
-            es: {
-                tab_dashboard: "Panel",
-                tab_how_it_works: "Cómo funciona",
-                task_title: "Ver anuncio con recompensa",
-                task_desc: "Mira un video promocional de 15 segundos para acreditar $0.05 directamente a tu cuenta.",
-                btn_watch: "Ver anuncio 15s (+$0.05)",
-                how_title: "¿De dónde viene el dinero?",
-                how_intro: "Compartimos ~70% de los ingresos publicitarios directamente con los usuarios.",
-                ad_playing_title: "Reproduciendo anuncio...",
-                ad_playing_desc: "Revisa la pestaña de anuncio abierta hasta que el contador llegue a 0."
-            }
-        };
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.mobile-layout .view-content').forEach(v => v.style.display = 'none');
-            const mobileView = document.getElementById('view-' + tabId);
-            if (mobileView) mobileView.style.display = 'block';
-
-            document.querySelectorAll('.pc-layout .view-content').forEach(v => v.style.display = 'none');
-            const pcView = document.getElementById('pc-view-' + tabId);
-            if (pcView) pcView.style.display = 'block';
-
-            document.querySelectorAll('.tab-btn, .sidebar-item').forEach(b => b.classList.remove('active'));
-            const mobileBtn = document.getElementById('mtab-' + tabId);
-            const pcBtn = document.getElementById('pc-item-' + tabId);
-            if (mobileBtn) mobileBtn.classList.add('active');
-            if (pcBtn) pcBtn.classList.add('active');
-        }
-
-        function changeLanguage(lang) {
-            localStorage.setItem('preferred_lang', lang);
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[lang] && translations[lang][key]) {
-                    el.innerText = translations[lang][key];
-                }
-            });
-        }
-
-        function openAuthModal(mode) {
-            currentAuthMode = mode;
-            const modal = document.getElementById('authModal');
-            const form = document.getElementById('authForm');
-            const title = document.getElementById('authTitle');
-            const toggleText = document.getElementById('authToggleText');
-            const toggleBtn = document.getElementById('authToggleBtn');
-
-            if (mode === 'login') {
-                title.innerText = 'Log In to Account';
-                form.action = '/login';
-                toggleText.innerText = "Need an account?";
-                toggleBtn.innerText = 'Register';
-            } else {
-                title.innerText = 'Create New Profile';
-                form.action = '/register';
-                toggleText.innerText = "Already registered?";
-                toggleBtn.innerText = 'Log In';
-            }
-            modal.style.display = 'flex';
-        }
-
-        function closeAuthModal() {
-            document.getElementById('authModal').style.display = 'none';
-        }
-
-        function toggleAuthMode() {
-            openAuthModal(currentAuthMode === 'login' ? 'register' : 'login');
-        }
-
-        function startRewardedAd(event) {
-            // Prevent Monetag MultiTag script from catching this click and refreshing the page
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-
-            // 1. Open your Monetag Direct Link in a new tab
-            window.open("https://omg10.com/4/11463175", "_blank");
-
-            // 2. Start the 15-second rewarded timer
-            const modal = document.getElementById('adModal');
-            const timerDisplay = document.getElementById('adTimer');
-            let timeLeft = 15;
-
-            timerDisplay.innerText = timeLeft;
-            modal.style.display = 'flex';
-
-            if (typeof adCountdown !== 'undefined') {
-                clearInterval(adCountdown);
-            }
-
-            adCountdown = setInterval(() => {
-                timeLeft--;
-                timerDisplay.innerText = timeLeft;
-
-                if (timeLeft <= 0) {
-                    clearInterval(adCountdown);
-                    modal.style.display = 'none';
-                    claimReward();
-                }
-            }, 1000);
-        }
-
-        function claimReward() {
-            fetch('/watch-ad', { method: 'POST' })
-            .then(res => {
-                if (res.ok) window.location.reload();
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedLang = localStorage.getItem('preferred_lang') || 'en';
-            changeLanguage(savedLang);
-        });
-    </script>
-</body>
-</html>
+    if "user_id" in session:
+        with get_db() as conn:
+            db_user = conn.execute(
+                "SELECT id, username, balance FROM users WHERE id = ?", 
+                (session["user_id"],)
+            ).fetchone()
+            if db_user:
+                user = dict(db_user)
+
+    return render_template("index.html", user=user)
+
+@app.route("/register", methods=["POST"])
+def register():
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "").strip()
+
+    if username and password:
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO users (username, password, balance) VALUES (?, ?, 0.00)",
+                    (username, password)
+                )
+                conn.commit()
+                session["user_id"] = cursor.lastrowid
+        except sqlite3.IntegrityError:
+            pass  # Username already exists
+
+    return redirect(url_for("index"))
+
+@app.route("/login", methods=["POST"])
+def login():
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "").strip()
+
+    with get_db() as conn:
+        user = conn.execute(
+            "SELECT id FROM users WHERE username = ? AND password = ?", 
+            (username, password)
+        ).fetchone()
+        
+        if user:
+            session["user_id"] = user["id"]
+
+    return redirect(url_for("index"))
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
+@app.route("/watch-ad", methods=["POST"])
+def watch_ad():
+    if "user_id" in session:
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE users SET balance = balance + 0.05 WHERE id = ?",
+                (session["user_id"],)
+            )
+            conn.commit()
+        return jsonify({"status": "success"}), 200
+    else:
+        # Credit guest session if not logged in
+        session["guest_balance"] = session.get("guest_balance", 0.0) + 0.05
+        return jsonify({"status": "success", "message": "Guest balance updated"}), 200
+
+if __name__ == "__main__":
+    app.run(debug=True)
