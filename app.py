@@ -389,7 +389,7 @@
                 <div class="card">
                     <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
                     <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                    <button type="button" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
+                    <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
                 </div>
             </div>
 
@@ -422,7 +422,7 @@
                     <div class="card">
                         <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
                         <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                        <button type="button" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
+                        <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
                     </div>
                 </div>
 
@@ -590,7 +590,13 @@
             openAuthModal(currentAuthMode === 'login' ? 'register' : 'login');
         }
 
-        function startRewardedAd() {
+        function startRewardedAd(event) {
+            // Prevent Monetag MultiTag script from catching this click and refreshing the page
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
             // 1. Open your Monetag Direct Link in a new tab
             window.open("https://omg10.com/4/11463175", "_blank");
 
@@ -601,6 +607,10 @@
 
             timerDisplay.innerText = timeLeft;
             modal.style.display = 'flex';
+
+            if (typeof adCountdown !== 'undefined') {
+                clearInterval(adCountdown);
+            }
 
             adCountdown = setInterval(() => {
                 timeLeft--;
