@@ -82,6 +82,9 @@
             font-weight: 600;
             font-size: 0.9rem;
             color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .balance-pill {
@@ -171,7 +174,7 @@
 
         /* --- PC DESKTOP LAYOUT (SIDEBAR + GRID) --- */
         .pc-layout {
-            display: none; /* Enabled via Media Query */
+            display: none;
             grid-template-columns: 240px 1fr 300px;
             gap: 24px;
             align-items: start;
@@ -251,7 +254,7 @@
             background: var(--accent-hover);
         }
 
-        /* --- MODALS & LOGIN SCREEN OVERLAY --- */
+        /* --- MODALS & OVERLAYS --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -345,7 +348,9 @@
 
             <!-- User Username & Balance Display (Top Right) -->
             <div class="user-badge">
-                <span class="user-name">{{ user.username }}</span>
+                <span class="user-name">
+                    {% if user.username == 'The Pablo' %}👑 {% endif %}{{ user.username }}
+                </span>
                 <span class="balance-pill">${{ "%.2f"|format(user.balance) }}</span>
             </div>
 
@@ -372,9 +377,7 @@
         </div>
         {% endif %}
 
-        <!-- =================================================== -->
-        <!-- MOBILE LAYOUT (Active on Phones < 992px)            -->
-        <!-- =================================================== -->
+        <!-- MOBILE LAYOUT -->
         <div class="mobile-layout">
             <div class="mobile-tabs">
                 <button class="tab-btn active" onclick="switchTab('dashboard')" id="mtab-dashboard" data-i18n="tab_dashboard">Dashboard</button>
@@ -386,7 +389,7 @@
                 <div class="card">
                     <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
                     <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                    <button type="button" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
+                    <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
                 </div>
             </div>
 
@@ -400,9 +403,7 @@
         </div>
 
 
-        <!-- =================================================== -->
-        <!-- PC DESKTOP LAYOUT (Active on Monitors >= 992px)     -->
-        <!-- =================================================== -->
+        <!-- PC DESKTOP LAYOUT -->
         <div class="pc-layout">
             
             <!-- Left Sidebar Navigation -->
@@ -421,7 +422,7 @@
                     <div class="card">
                         <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
                         <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                        <button type="button" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
+                        <button type="button" class="btn-action" onclick="startRewardedAd(event)" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
                     </div>
                 </div>
 
@@ -438,7 +439,9 @@
                 <h4 style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px;">ACCOUNT PROFILE</h4>
                 <div style="background: var(--bg-dark); padding: 14px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--card-border);">
                     <div style="font-size: 0.8rem; color: var(--text-muted);">Current User</div>
-                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent); margin-top: 2px;">{{ user.username }}</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent); margin-top: 2px;">
+                        {% if user.username == 'The Pablo' %}👑 {% endif %}{{ user.username }}
+                    </div>
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Saved Balance</div>
                     <div style="font-weight: 800; font-size: 1.25rem; color: var(--success);">${{ "%.2f"|format(user.balance) }}</div>
                 </div>
@@ -450,9 +453,7 @@
     </div>
 
 
-    <!-- =================================================== -->
-    <!-- DEDICATED LOGIN & REGISTRATION SCREEN / MODAL       -->
-    <!-- =================================================== -->
+    <!-- LOGIN & REGISTRATION MODAL -->
     <div id="authModal" class="modal-overlay">
         <div class="modal-card">
             <h3 id="authTitle" style="margin-bottom: 20px; font-size: 1.4rem; text-align: center;">Account Access</h3>
@@ -481,9 +482,7 @@
     </div>
 
 
-    <!-- =================================================== -->
-    <!-- REWARDED AD TIMER MODAL                             -->
-    <!-- =================================================== -->
+    <!-- REWARDED AD TIMER MODAL -->
     <div id="adModal" class="modal-overlay">
         <div class="modal-card" style="text-align: center;">
             <h3 data-i18n="ad_playing_title">Playing Rewarded Ad...</h3>
@@ -499,7 +498,6 @@
         let currentAuthMode = 'login';
         let adCountdown;
 
-        // Multilingual Translations Dictionary
         const translations = {
             en: {
                 tab_dashboard: "Dashboard",
@@ -537,17 +535,14 @@
         };
 
         function switchTab(tabId) {
-            // Update Mobile View
             document.querySelectorAll('.mobile-layout .view-content').forEach(v => v.style.display = 'none');
             const mobileView = document.getElementById('view-' + tabId);
             if (mobileView) mobileView.style.display = 'block';
 
-            // Update PC View
             document.querySelectorAll('.pc-layout .view-content').forEach(v => v.style.display = 'none');
             const pcView = document.getElementById('pc-view-' + tabId);
             if (pcView) pcView.style.display = 'block';
 
-            // Active tab styling
             document.querySelectorAll('.tab-btn, .sidebar-item').forEach(b => b.classList.remove('active'));
             const mobileBtn = document.getElementById('mtab-' + tabId);
             const pcBtn = document.getElementById('pc-item-' + tabId);
@@ -595,13 +590,27 @@
             openAuthModal(currentAuthMode === 'login' ? 'register' : 'login');
         }
 
-        function startRewardedAd() {
+        function startRewardedAd(event) {
+            // Prevent Monetag MultiTag script from catching this click and refreshing the page
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            // 1. Open your Monetag Direct Link in a new tab
+            window.open("https://omg10.com/4/11463175", "_blank");
+
+            // 2. Start the 15-second rewarded timer
             const modal = document.getElementById('adModal');
             const timerDisplay = document.getElementById('adTimer');
             let timeLeft = 15;
 
             timerDisplay.innerText = timeLeft;
             modal.style.display = 'flex';
+
+            if (typeof adCountdown !== 'undefined') {
+                clearInterval(adCountdown);
+            }
 
             adCountdown = setInterval(() => {
                 timeLeft--;
