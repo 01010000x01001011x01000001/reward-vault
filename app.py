@@ -26,6 +26,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Execute database setup at startup so Gunicorn initializes tables on Render
+init_db()
+
 @app.route('/')
 def home():
     conn = sqlite3.connect('database.db')
@@ -55,6 +58,4 @@ def watch_ad():
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
-    # Build database on startup
-    init_db()
     app.run(debug=True, port=5001)
