@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RewardVault | Earn Cash Watching Ads</title>
     
-    <!-- Monetag Verification Meta Tag -->
-    <meta name="monetag" content="YOUR_MONETAG_VERIFICATION_CODE">
-
-    <!-- Monetag MultiTag Script -->
-    <!-- REPLACE THIS WITH YOUR MONETAG MULTITAG SCRIPT TAG -->
-    <script src="https://alwingulla.com/88/tag.min.js" data-zone="YOUR_ZONE_ID" async data-cfasync="false"></script>
+    <!-- Monetag MultiTag Script (Zone 265489) -->
+    <script src="https://quge5.com/88/tag.min.js" data-zone="265489" async data-cfasync="false"></script>
 
     <style>
         :root {
@@ -69,7 +65,7 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .user-badge {
@@ -111,12 +107,25 @@
             background: var(--accent);
             color: white;
             border: none;
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
             font-weight: 600;
             font-size: 0.85rem;
             cursor: pointer;
             text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-auth-header:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-logout {
+            background: #ef4444;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
         }
 
         /* --- MAIN CONTAINER LAYOUT --- */
@@ -162,7 +171,7 @@
 
         /* --- PC DESKTOP LAYOUT (SIDEBAR + GRID) --- */
         .pc-layout {
-            display: none; /* Turned on via Media Query below */
+            display: none; /* Enabled via Media Query */
             grid-template-columns: 240px 1fr 300px;
             gap: 24px;
             align-items: start;
@@ -242,19 +251,15 @@
             background: var(--accent-hover);
         }
 
-        .btn-action:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* --- MODALS (Ad Countdown & Login/Register) --- */
+        /* --- MODALS & LOGIN SCREEN OVERLAY --- */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
             align-items: center;
@@ -268,8 +273,8 @@
             padding: 32px;
             width: 90%;
             max-width: 420px;
-            text-align: center;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
 
         .form-group {
@@ -282,16 +287,22 @@
             font-size: 0.85rem;
             color: var(--text-muted);
             margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
+            padding: 12px 14px;
             background: var(--bg-dark);
             border: 1px solid var(--card-border);
             border-radius: 8px;
             color: var(--text-main);
             font-size: 0.95rem;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
         }
 
         .timer-display {
@@ -299,18 +310,19 @@
             font-weight: 900;
             color: var(--accent);
             margin: 20px 0;
+            text-align: center;
         }
 
-        /* --- RESPONSIVE MEDIA QUERIES (DESKTOP DETECTOR) --- */
+        /* --- RESPONSIVE MEDIA QUERIES (PC DETECTOR) --- */
         @media (min-width: 992px) {
             .mobile-tabs {
-                display: none; /* Hide mobile tabs on PC */
+                display: none;
             }
             .mobile-layout {
-                display: none; /* Hide mobile stacked layout on PC */
+                display: none;
             }
             .pc-layout {
-                display: grid; /* Enable 3-Column PC dashboard */
+                display: grid;
             }
         }
     </style>
@@ -331,7 +343,7 @@
                 <option value="es">ES 🇪🇸</option>
             </select>
 
-            <!-- User Info & Balance (Top Right) -->
+            <!-- User Username & Balance Display (Top Right) -->
             <div class="user-badge">
                 <span class="user-name">{{ user.username }}</span>
                 <span class="balance-pill">${{ "%.2f"|format(user.balance) }}</span>
@@ -340,13 +352,25 @@
             {% if user.id == 0 %}
                 <button class="btn-auth-header" onclick="openAuthModal('login')">Log In</button>
             {% else %}
-                <a href="/logout" class="btn-auth-header" style="background: #ef4444;">Log Out</a>
+                <a href="/logout" class="btn-auth-header btn-logout">Log Out</a>
             {% endif %}
         </div>
     </header>
 
     <!-- MAIN APP CONTAINER -->
     <div class="app-container">
+
+        {% if user.id == 0 %}
+        <!-- GUEST WELCOME BANNER (PROMPTS LOGIN) -->
+        <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: var(--accent);">
+            <h3 class="card-title">Welcome to RewardVault!</h3>
+            <p class="card-desc">Log in or create a free profile to save your accumulated cash balance permanently on our servers.</p>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-action" style="max-width: 180px;" onclick="openAuthModal('login')">Log In</button>
+                <button class="btn-action" style="max-width: 180px; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="openAuthModal('register')">Register</button>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- =================================================== -->
         <!-- MOBILE LAYOUT (Active on Phones < 992px)            -->
@@ -362,7 +386,7 @@
                 <div class="card">
                     <h3 class="card-title" data-i18n="task_title">Watch Rewarded Ad</h3>
                     <p class="card-desc" data-i18n="task_desc">Watch a short promo stream to credit $0.05 directly to your balance.</p>
-                    <button type="button" id="watchAdBtn" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
+                    <button type="button" class="btn-action" onclick="startRewardedAd()" data-i18n="btn_watch">Watch 15s Ad (+$0.05)</button>
                 </div>
             </div>
 
@@ -383,10 +407,10 @@
             
             <!-- Left Sidebar Navigation -->
             <div class="pc-sidebar">
-                <div class="sidebar-item active" onclick="switchTab('dashboard')">
+                <div class="sidebar-item active" id="pc-item-dashboard" onclick="switchTab('dashboard')">
                     📊 <span data-i18n="tab_dashboard">Dashboard</span>
                 </div>
-                <div class="sidebar-item" onclick="switchTab('how-it-works')">
+                <div class="sidebar-item" id="pc-item-how-it-works" onclick="switchTab('how-it-works')">
                     ❓ <span data-i18n="tab_how_it_works">How It Works</span>
                 </div>
             </div>
@@ -411,12 +435,14 @@
 
             <!-- Right Widget Panel -->
             <div class="pc-widget-panel">
-                <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted);">ACCOUNT STATUS</h4>
-                <div style="background: var(--bg-dark); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">Logged in as:</div>
-                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent);">{{ user.username }}</div>
+                <h4 style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px;">ACCOUNT PROFILE</h4>
+                <div style="background: var(--bg-dark); padding: 14px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--card-border);">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Current User</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent); margin-top: 2px;">{{ user.username }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Saved Balance</div>
+                    <div style="font-weight: 800; font-size: 1.25rem; color: var(--success);">${{ "%.2f"|format(user.balance) }}</div>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--success);">● System Status: Online</div>
+                <div style="font-size: 0.85rem; color: var(--success); font-weight: 600;">● Monetag Ad Server Connected</div>
             </div>
 
         </div>
@@ -425,11 +451,11 @@
 
 
     <!-- =================================================== -->
-    <!-- MODAL 1: AUTHENTICATION (LOGIN / REGISTER)          -->
+    <!-- DEDICATED LOGIN & REGISTRATION SCREEN / MODAL       -->
     <!-- =================================================== -->
     <div id="authModal" class="modal-overlay">
         <div class="modal-card">
-            <h3 id="authTitle" style="margin-bottom: 20px;">Account Access</h3>
+            <h3 id="authTitle" style="margin-bottom: 20px; font-size: 1.4rem; text-align: center;">Account Access</h3>
             
             <form id="authForm" method="POST" action="/login">
                 <div class="form-group">
@@ -443,37 +469,37 @@
                 <button type="submit" class="btn-action" style="margin-top: 10px;">Submit</button>
             </form>
 
-            <div style="margin-top: 16px; font-size: 0.85rem;">
+            <div style="margin-top: 20px; font-size: 0.9rem; text-align: center;">
                 <span id="authToggleText">Need an account?</span> 
-                <a href="javascript:void(0)" onclick="toggleAuthMode()" id="authToggleBtn" style="color: var(--accent); font-weight: bold;">Register</a>
+                <a href="javascript:void(0)" onclick="toggleAuthMode()" id="authToggleBtn" style="color: var(--accent); font-weight: bold; text-decoration: none;">Register</a>
             </div>
-            <button onclick="closeAuthModal()" style="background: none; border: none; color: var(--text-muted); margin-top: 12px; cursor: pointer;">Close</button>
+            
+            <div style="text-align: center; margin-top: 14px;">
+                <button onclick="closeAuthModal()" style="background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer;">Close window</button>
+            </div>
         </div>
     </div>
 
 
     <!-- =================================================== -->
-    <!-- MODAL 2: REWARDED AD TIMER                          -->
+    <!-- REWARDED AD TIMER MODAL                             -->
     <!-- =================================================== -->
     <div id="adModal" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card" style="text-align: center;">
             <h3 data-i18n="ad_playing_title">Playing Rewarded Ad...</h3>
             <p data-i18n="ad_playing_desc" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 8px;">Please view the ad tab until the timer hits 0.</p>
             <div id="adTimer" class="timer-display">15</div>
-            <div style="font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;">Monetag Rewarded Stream</div>
+            <div style="font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Monetag Live Stream</div>
         </div>
     </div>
 
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // REPLACE WITH YOUR MONETAG DIRECT LINK
-        const MONETAG_DIRECT_LINK = "https://otieu.com/4/YOUR_ZONE_ID";
-
         let currentAuthMode = 'login';
         let adCountdown;
 
-        // Multilingual Translations
+        // Multilingual Translations Dictionary
         const translations = {
             en: {
                 tab_dashboard: "Dashboard",
@@ -496,22 +522,37 @@
                 how_intro: "Мы делимся ~70% дохода от рекламы с пользователями.",
                 ad_playing_title: "Просмотр рекламы...",
                 ad_playing_desc: "Не закрывайте вкладку, пока таймер не закончится."
+            },
+            es: {
+                tab_dashboard: "Panel",
+                tab_how_it_works: "Cómo funciona",
+                task_title: "Ver anuncio con recompensa",
+                task_desc: "Mira un video promocional de 15 segundos para acreditar $0.05 directamente a tu cuenta.",
+                btn_watch: "Ver anuncio 15s (+$0.05)",
+                how_title: "¿De dónde viene el dinero?",
+                how_intro: "Compartimos ~70% de los ingresos publicitarios directamente con los usuarios.",
+                ad_playing_title: "Reproduciendo anuncio...",
+                ad_playing_desc: "Revisa la pestaña de anuncio abierta hasta que el contador llegue a 0."
             }
         };
 
         function switchTab(tabId) {
-            // Mobile Tabs
+            // Update Mobile View
             document.querySelectorAll('.mobile-layout .view-content').forEach(v => v.style.display = 'none');
             const mobileView = document.getElementById('view-' + tabId);
             if (mobileView) mobileView.style.display = 'block';
 
-            // PC Views
+            // Update PC View
             document.querySelectorAll('.pc-layout .view-content').forEach(v => v.style.display = 'none');
             const pcView = document.getElementById('pc-view-' + tabId);
             if (pcView) pcView.style.display = 'block';
 
-            // Update Active Buttons
+            // Active tab styling
             document.querySelectorAll('.tab-btn, .sidebar-item').forEach(b => b.classList.remove('active'));
+            const mobileBtn = document.getElementById('mtab-' + tabId);
+            const pcBtn = document.getElementById('pc-item-' + tabId);
+            if (mobileBtn) mobileBtn.classList.add('active');
+            if (pcBtn) pcBtn.classList.add('active');
         }
 
         function changeLanguage(lang) {
@@ -529,15 +570,18 @@
             const modal = document.getElementById('authModal');
             const form = document.getElementById('authForm');
             const title = document.getElementById('authTitle');
+            const toggleText = document.getElementById('authToggleText');
             const toggleBtn = document.getElementById('authToggleBtn');
 
             if (mode === 'login') {
-                title.innerText = 'Log In';
+                title.innerText = 'Log In to Account';
                 form.action = '/login';
+                toggleText.innerText = "Need an account?";
                 toggleBtn.innerText = 'Register';
             } else {
-                title.innerText = 'Create Account';
+                title.innerText = 'Create New Profile';
                 form.action = '/register';
+                toggleText.innerText = "Already registered?";
                 toggleBtn.innerText = 'Log In';
             }
             modal.style.display = 'flex';
@@ -552,10 +596,6 @@
         }
 
         function startRewardedAd() {
-            if (MONETAG_DIRECT_LINK && !MONETAG_DIRECT_LINK.includes("YOUR_ZONE_ID")) {
-                window.open(MONETAG_DIRECT_LINK, '_blank');
-            }
-
             const modal = document.getElementById('adModal');
             const timerDisplay = document.getElementById('adTimer');
             let timeLeft = 15;
