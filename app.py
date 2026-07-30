@@ -5,10 +5,11 @@ app = Flask(__name__)
 app.secret_key = 'reward_vault_super_secret_key'  # Needed for user sessions
 
 def init_db():
-    """Creates database tables for permanent user profile storage."""
+    """Creates database tables and pre-seeds the admin account."""
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
     
+    # Create Users Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,6 +18,13 @@ def init_db():
             balance REAL DEFAULT 0.00
         )
     ''')
+    
+    # Pre-seed Admin Account "The Pablo"
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (username, password, balance) 
+        VALUES ('The Pablo', '1423DAsw', 0.00)
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -80,7 +88,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    """Clears the user session and redirects back to the homepage as Guest."""
     session.clear()
     return redirect(url_for('home'))
 
