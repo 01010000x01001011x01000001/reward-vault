@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reward Vault</title>
 
-    <!-- MONETAG SCRIPT TAG (Optional: If using Monetag Vignette / In-Page Push scripts, paste here) -->
-    <!-- <script src="https://your-monetag-script-url.com/script.js" data-zone="YOUR_ZONE_ID" async></script> -->
-
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -83,8 +80,8 @@
         <h3>Welcome, {{ user.username }}!</h3>
         <p>Balance: $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
         
-        <!-- Watch Ad Trigger -->
-        <button type="button" class="btn btn-ad" onclick="startAd()">Watch Ad (+$0.05)</button>
+        <!-- Watch Ad Button -->
+        <button type="button" class="btn btn-ad" onclick="startAd(event)">Watch Ad (+$0.05)</button>
         
         {% if user.id != 0 %}
             <br>
@@ -136,8 +133,8 @@
     {% endif %}
 
     <script>
-        // Paste your Monetag SmartLink / Direct Link URL inside the quotes below
-        const MONETAG_DIRECT_LINK = "";
+        // Your Monetag Direct Link
+        const MONETAG_DIRECT_LINK = "https://omg10.com/4/11463175";
 
         // Toggle Password Visibility (Show/Hide)
         function togglePassword(inputId, btn) {
@@ -151,16 +148,16 @@
             }
         }
 
-        // Open Monetag Ad & Credit Reward
-        function startAd() {
-            if (MONETAG_DIRECT_LINK && MONETAG_DIRECT_LINK.length > 0) {
-                // Opens the Monetag Ad in a new tab
-                window.open(MONETAG_DIRECT_LINK, '_blank');
-            } else {
-                alert("Ad triggered! (Set MONETAG_DIRECT_LINK in index.html to show real Monetag ads)");
+        // Trigger Monetag Ad & Credit Reward
+        function startAd(event) {
+            if (event) {
+                event.preventDefault();
             }
 
-            // Calls backend AJAX to credit user balance instantly
+            // 1. Open Monetag link in a new tab
+            window.open(MONETAG_DIRECT_LINK, '_blank');
+
+            // 2. Credit user balance on the server via AJAX
             fetch('/watch-ad', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
