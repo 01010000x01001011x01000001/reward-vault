@@ -133,8 +133,8 @@
     {% endif %}
 
     <script>
-        // Your Monetag Direct Link
-        const MONETAG_DIRECT_LINK = "https://omg10.com/4/11463175";
+        // Updated Monetag Direct Link
+        const MONETAG_DIRECT_LINK = "https://omg10.com/4/11485039";
 
         // Toggle Password Visibility (Show/Hide)
         function togglePassword(inputId, btn) {
@@ -154,10 +154,16 @@
                 event.preventDefault();
             }
 
-            // 1. Open Monetag link in a new tab
-            window.open(MONETAG_DIRECT_LINK, '_blank');
+            // 1. Attempt to open Monetag direct link in a new tab
+            const adWindow = window.open(MONETAG_DIRECT_LINK, '_blank');
 
-            // 2. Credit user balance on the server via AJAX
+            // 2. Check if the popup was suppressed by a browser ad blocker
+            if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
+                alert("Ad popup was blocked! Please disable your ad blocker or allow popups for this site to earn rewards.");
+                return;
+            }
+
+            // 3. Credit user balance on the server via AJAX
             fetch('/watch-ad', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
