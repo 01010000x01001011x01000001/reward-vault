@@ -5,10 +5,10 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 
 app = Flask(__name__)
 
-# Fixed secret key so session cookies stay valid across app restarts
+# Fixed secret key so user sessions remain valid across app restarts/re-deploys
 app.secret_key = os.environ.get("SECRET_KEY", "rewardvault_super_secret_key_2026")
 
-# Set default session lifetime (used when "Remember Me" is checked)
+# Configure 30-day session retention for "Remember Me"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
@@ -30,7 +30,7 @@ def init_db():
             )
         ''')
         
-        # Seed default admin account if it doesn't exist
+        # Seed default admin account if it does not exist
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM users WHERE username = ?", ("admin",))
         if not cursor.fetchone():
@@ -55,7 +55,7 @@ def index():
             if db_user:
                 user = dict(db_user)
             else:
-                # User ID no longer exists in DB (e.g. wiped SQLite)
+                # Clear session if the user ID no longer exists in DB
                 session.pop("user_id", None)
 
     return render_template("index.html", user=user)
@@ -75,9 +75,9 @@ def register():
                 )
                 conn.commit()
                 session["user_id"] = cursor.lastrowid
-                session.permanent = True  # Keep logged in after registering
+                session.permanent = True
         except sqlite3.IntegrityError:
-            pass  # Username already exists
+            pass  # Username already taken
 
     return redirect(url_for("index"))
 
@@ -85,7 +85,7 @@ def register():
 def login():
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "").strip()
-    remember = request.form.get("remember")  # Checkbox value
+    remember = request.form.get("remember")
 
     with get_db() as conn:
         user = conn.execute(
@@ -95,7 +95,6 @@ def login():
         
         if user:
             session["user_id"] = user["id"]
-            # If "Remember Me" is checked, make session permanent (30 days)
             session.permanent = bool(remember)
 
     return redirect(url_for("index"))
