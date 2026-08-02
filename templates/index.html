@@ -4,15 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reward Vault</title>
+
+    <!-- MONETAG SCRIPT TAG (Optional: If using Monetag Vignette / In-Page Push scripts, paste here) -->
+    <!-- <script src="https://your-monetag-script-url.com/script.js" data-zone="YOUR_ZONE_ID" async></script> -->
+
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; max-width: 500px; margin: 40px auto; padding: 20px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .input-group { margin-bottom: 15px; position: relative; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; }
-        .pwd-container { display: flex; align-items: center; position: relative; }
-        .toggle-pwd { position: absolute; right: 10px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 0.85rem; }
-        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; cursor: pointer; }
-        button.btn { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #121212; 
+            color: #ffffff; 
+            max-width: 500px; 
+            margin: 40px auto; 
+            padding: 20px; 
+        }
+        .card { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .input-group { 
+            margin-bottom: 15px; 
+            position: relative; 
+        }
+        input[type="text"], input[type="password"] { 
+            width: 100%; 
+            padding: 10px; 
+            border-radius: 4px; 
+            border: 1px solid #333; 
+            background: #2a2a2a; 
+            color: #fff; 
+            box-sizing: border-box; 
+        }
+        .pwd-container { 
+            display: flex; 
+            align-items: center; 
+            position: relative; 
+        }
+        .toggle-pwd { 
+            position: absolute; 
+            right: 10px; 
+            background: none; 
+            border: none; 
+            color: #aaa; 
+            cursor: pointer; 
+            font-size: 0.85rem; 
+        }
+        .checkbox-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin-bottom: 15px; 
+            cursor: pointer; 
+        }
+        button.btn { 
+            width: 100%; 
+            padding: 10px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
         button.btn:hover { background: #0056b3; }
         .btn-ad { background: #28a745; margin-top: 10px; }
         .btn-ad:hover { background: #218838; }
@@ -23,13 +78,13 @@
 
     <h2>Reward Vault</h2>
 
-    <!-- User Info Header -->
+    <!-- User Header & Balance -->
     <div class="card">
         <h3>Welcome, {{ user.username }}!</h3>
         <p>Balance: $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
         
-        <!-- Watch Ad Button (Fixed AJAX call) -->
-        <button type="button" class="btn btn-ad" onclick="watchAd()">Watch Ad (+$0.05)</button>
+        <!-- Watch Ad Trigger -->
+        <button type="button" class="btn btn-ad" onclick="startAd()">Watch Ad (+$0.05)</button>
         
         {% if user.id != 0 %}
             <br>
@@ -81,7 +136,10 @@
     {% endif %}
 
     <script>
-        // Toggle Password Visibility
+        // Paste your Monetag SmartLink / Direct Link URL inside the quotes below
+        const MONETAG_DIRECT_LINK = "";
+
+        // Toggle Password Visibility (Show/Hide)
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
             if (input.type === "password") {
@@ -93,17 +151,24 @@
             }
         }
 
-        // Watch Ad without opening a new tab
-        function watchAd() {
+        // Open Monetag Ad & Credit Reward
+        function startAd() {
+            if (MONETAG_DIRECT_LINK && MONETAG_DIRECT_LINK.length > 0) {
+                // Opens the Monetag Ad in a new tab
+                window.open(MONETAG_DIRECT_LINK, '_blank');
+            } else {
+                alert("Ad triggered! (Set MONETAG_DIRECT_LINK in index.html to show real Monetag ads)");
+            }
+
+            // Calls backend AJAX to credit user balance instantly
             fetch('/watch-ad', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
                         document.getElementById('user-balance').innerText = data.new_balance;
-                        alert('Ad watched! $0.05 added to your balance.');
                     }
                 })
-                .catch(err => console.error('Error watching ad:', err));
+                .catch(err => console.error('Error crediting reward:', err));
         }
     </script>
 </body>
