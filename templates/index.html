@@ -167,7 +167,7 @@
             // 2. ADBLOCK PROTECTION: Verify pop-up was allowed
             const adWindow = window.open(MONETAG_DIRECT_LINK, '_blank');
             if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
-                alert("Ad popup was blocked! Disable your ad blocker or allow popups to earn rewards.");
+                alert("Ad popup was blocked! Disable your ad blocker to allow popups to earn rewards.");
                 return;
             }
 
