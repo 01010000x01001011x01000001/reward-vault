@@ -112,21 +112,19 @@
 
     <h2>Reward Vault</h2>
 
-    <!-- User Header & Balance -->
+    {% if user.id != 0 %}
+    <!-- User Header & Balance (only shown once logged in) -->
     <div class="card">
         <h3>Welcome, {{ user.username }}!</h3>
         <p>Balance: $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
-        
+
         <!-- Watch Ad Button -->
         <button type="button" id="ad-btn" class="btn btn-ad" onclick="startAd(event)">Watch Ad (+$0.05)</button>
-        
-        {% if user.id != 0 %}
-            <br>
-            <a href="/logout" class="logout-link">Log Out</a>
-        {% endif %}
-    </div>
 
-    {% if user.id == 0 %}
+        <br>
+        <a href="/logout" class="logout-link">Log Out</a>
+    </div>
+    {% else %}
     <!-- Login Form -->
     <div class="card">
         <h3>Login</h3>
