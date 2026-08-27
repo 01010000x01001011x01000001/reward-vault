@@ -55,7 +55,7 @@ init_db()
 
 @app.route("/")
 def index():
-    user = {"id": 0, "username": "Guest", "balance": session.get("guest_balance", 0.00)}
+    user = {"id": 0, "username": "Guest", "balance": 0.00}
     
     if "user_id" in session:
         with get_db() as conn:
@@ -129,6 +129,9 @@ def ad_start():
     in-page, not just a link opened). Issues a one-time token binding this
     specific ad impression to a start timestamp. No reward is granted here.
     """
+    if "user_id" not in session:
+        return jsonify({"status": "error", "message": "You must be logged in to watch ads."}), 401
+
     now = time.time()
     last_watch_time = session.get("last_ad_time", 0)
     time_passed = now - last_watch_time
@@ -163,6 +166,9 @@ def ad_claim():
     token = data.get("token")
     was_visible = bool(data.get("was_visible", False))
 
+    if "user_id" not in session:
+        return jsonify({"status": "error", "message": "You must be logged in to claim rewards."}), 401
+
     stored_token = session.get("ad_token")
     started_at = session.get("ad_token_started")
 
@@ -186,21 +192,14 @@ def ad_claim():
 
     session["last_ad_time"] = time.time()
 
-    new_balance = 0.00
-    if "user_id" in session:
-        with get_db() as conn:
-            conn.execute(
-                "UPDATE users SET balance = balance + 0.05 WHERE id = ?",
-                (session["user_id"],)
-            )
-            conn.commit()
-            user = conn.execute("SELECT balance FROM users WHERE id = ?", (session["user_id"],)).fetchone()
-            if user:
-                new_balance = user["balance"]
-    else:
-        current_guest = session.get("guest_balance", 0.00)
-        new_balance = round(current_guest + 0.05, 2)
-        session["guest_balance"] = new_balance
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET balance = balance + 0.05 WHERE id = ?",
+            (session["user_id"],)
+        )
+        conn.commit()
+        user = conn.execute("SELECT balance FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        new_balance = user["balance"] if user else 0.00
 
     return jsonify({"status": "success", "new_balance": f"{new_balance:.2f}"}), 200
 
