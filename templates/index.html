@@ -106,67 +106,82 @@
             background: #28a745;
             transition: width 1s linear;
         }
+        .lang-switch {
+            display: flex; justify-content: flex-end; margin-bottom: 10px;
+        }
+        .lang-switch select {
+            background: #2a2a2a; color: #fff; border: 1px solid #333;
+            border-radius: 4px; padding: 6px 8px; font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Reward Vault</h2>
+    <div class="lang-switch">
+        <select id="lang-select" onchange="setLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+            <option value="es">Español</option>
+        </select>
+    </div>
+
+    <h2 data-i18n="title">Reward Vault</h2>
 
     {% if user.id != 0 %}
     <!-- User Header & Balance (only shown once logged in) -->
     <div class="card">
-        <h3>Welcome, {{ user.username }}!</h3>
-        <p>Balance: $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
+        <h3><span data-i18n="welcome">Welcome,</span> {{ user.username }}!</h3>
+        <p><span data-i18n="balance_label">Balance:</span> $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
 
         <!-- Watch Ad Button -->
-        <button type="button" id="ad-btn" class="btn btn-ad" onclick="startAd(event)">Watch Ad (+$0.05)</button>
+        <button type="button" id="ad-btn" class="btn btn-ad" onclick="startAd(event)" data-i18n="watch_ad">Watch Ad (+$0.05)</button>
 
         <br>
-        <a href="/logout" class="logout-link">Log Out</a>
+        <a href="/logout" class="logout-link" data-i18n="logout">Log Out</a>
     </div>
     {% else %}
     <!-- Login Form -->
     <div class="card">
-        <h3>Login</h3>
-        <p><small>Default Admin: <b>admin</b> / <b>admin123</b></small></p>
+        <h3 data-i18n="login_title">Login</h3>
+        <p><small data-i18n="default_admin">Default Admin: <b>admin</b> / <b>admin123</b></small></p>
         <form action="/login" method="POST">
             <!-- Bot Honeypot Field -->
             <input type="text" name="website_hp" class="hp-field" tabindex="-1" autocomplete="off">
 
             <div class="input-group">
-                <input type="text" name="username" placeholder="Username" required>
+                <input type="text" name="username" data-i18n-placeholder="username_placeholder" placeholder="Username" required>
             </div>
             
             <div class="input-group pwd-container">
-                <input type="password" id="login-pwd" name="password" placeholder="Password" required>
-                <button type="button" class="toggle-pwd" onclick="togglePassword('login-pwd', this)">Show</button>
+                <input type="password" id="login-pwd" name="password" data-i18n-placeholder="password_placeholder" placeholder="Password" required>
+                <button type="button" class="toggle-pwd" onclick="togglePassword('login-pwd', this)" data-i18n="show">Show</button>
             </div>
 
             <label class="checkbox-group">
-                <input type="checkbox" name="remember" value="true"> Remember me
+                <input type="checkbox" name="remember" value="true"> <span data-i18n="remember_me">Remember me</span>
             </label>
 
-            <button type="submit" class="btn">Sign In</button>
+            <button type="submit" class="btn" data-i18n="sign_in">Sign In</button>
         </form>
     </div>
 
     <!-- Register Form -->
     <div class="card">
-        <h3>Create Account</h3>
+        <h3 data-i18n="create_account">Create Account</h3>
         <form action="/register" method="POST">
             <!-- Bot Honeypot Field -->
             <input type="text" name="website_hp" class="hp-field" tabindex="-1" autocomplete="off">
 
             <div class="input-group">
-                <input type="text" name="username" placeholder="Username" required>
+                <input type="text" name="username" data-i18n-placeholder="username_placeholder" placeholder="Username" required>
             </div>
             
             <div class="input-group pwd-container">
-                <input type="password" id="reg-pwd" name="password" placeholder="Password" required>
-                <button type="button" class="toggle-pwd" onclick="togglePassword('reg-pwd', this)">Show</button>
+                <input type="password" id="reg-pwd" name="password" data-i18n-placeholder="password_placeholder" placeholder="Password" required>
+                <button type="button" class="toggle-pwd" onclick="togglePassword('reg-pwd', this)" data-i18n="show">Show</button>
             </div>
 
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn" data-i18n="register">Register</button>
         </form>
     </div>
     {% endif %}
@@ -176,22 +191,126 @@
         <div class="ad-modal">
             <div class="ad-frame-wrap" id="ad-frame-wrap"></div>
             <div class="ad-progress-track"><div class="ad-progress-fill" id="ad-progress-fill"></div></div>
-            <p id="ad-modal-status">Watching ad...</p>
+            <p id="ad-modal-status" data-i18n="watching_ad">Watching ad...</p>
         </div>
     </div>
 
     <script>
-        const COOLDOWN_TIME = 15; // must match AD_COOLDOWN_SECONDS server-side
+        const COOLDOWN_TIME = 5; // must match AD_COOLDOWN_SECONDS server-side
         const MIN_WATCH_SECONDS = 20; // must match MIN_WATCH_SECONDS server-side
+
+        const TRANSLATIONS = {
+            en: {
+                title: "Reward Vault",
+                welcome: "Welcome,",
+                balance_label: "Balance:",
+                watch_ad: "Watch Ad (+$0.05)",
+                logout: "Log Out",
+                login_title: "Login",
+                default_admin: "Default Admin: <b>admin</b> / <b>admin123</b>",
+                username_placeholder: "Username",
+                password_placeholder: "Password",
+                show: "Show",
+                hide: "Hide",
+                remember_me: "Remember me",
+                sign_in: "Sign In",
+                create_account: "Create Account",
+                register: "Register",
+                watching_ad: "Watching ad...",
+                claiming_reward: "Claiming reward...",
+                wait_seconds: "Wait {s}s...",
+            },
+            ru: {
+                title: "Reward Vault",
+                welcome: "Добро пожаловать,",
+                balance_label: "Баланс:",
+                watch_ad: "Смотреть рекламу (+$0.05)",
+                logout: "Выйти",
+                login_title: "Вход",
+                default_admin: "Админ по умолчанию: <b>admin</b> / <b>admin123</b>",
+                username_placeholder: "Имя пользователя",
+                password_placeholder: "Пароль",
+                show: "Показать",
+                hide: "Скрыть",
+                remember_me: "Запомнить меня",
+                sign_in: "Войти",
+                create_account: "Создать аккаунт",
+                register: "Зарегистрироваться",
+                watching_ad: "Просмотр рекламы...",
+                claiming_reward: "Получение награды...",
+                wait_seconds: "Подождите {s}с...",
+            },
+            es: {
+                title: "Reward Vault",
+                welcome: "Bienvenido,",
+                balance_label: "Saldo:",
+                watch_ad: "Ver anuncio (+$0.05)",
+                logout: "Cerrar sesión",
+                login_title: "Iniciar sesión",
+                default_admin: "Admin predeterminado: <b>admin</b> / <b>admin123</b>",
+                username_placeholder: "Usuario",
+                password_placeholder: "Contraseña",
+                show: "Mostrar",
+                hide: "Ocultar",
+                remember_me: "Recuérdame",
+                sign_in: "Iniciar sesión",
+                create_account: "Crear cuenta",
+                register: "Registrarse",
+                watching_ad: "Viendo anuncio...",
+                claiming_reward: "Reclamando recompensa...",
+                wait_seconds: "Espera {s}s...",
+            },
+        };
+
+        let currentLang = "en";
+
+        function applyLanguage(lang) {
+            const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+            currentLang = lang;
+
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (dict[key] !== undefined) el.innerHTML = dict[key];
+            });
+
+            document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+                const key = el.getAttribute("data-i18n-placeholder");
+                if (dict[key] !== undefined) el.placeholder = dict[key];
+            });
+
+            document.documentElement.lang = lang;
+        }
+
+        function setLanguage(lang) {
+            try {
+                localStorage.setItem("reward_vault_lang", lang);
+            } catch (e) { /* storage unavailable, ignore */ }
+            applyLanguage(lang);
+        }
+
+        function t(key) {
+            const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+            return dict[key] !== undefined ? dict[key] : (TRANSLATIONS.en[key] || key);
+        }
+
+        (function initLanguage() {
+            let saved = "en";
+            try {
+                saved = localStorage.getItem("reward_vault_lang") || "en";
+            } catch (e) { /* storage unavailable, default to en */ }
+            if (!TRANSLATIONS[saved]) saved = "en";
+            document.getElementById("lang-select").value = saved;
+            applyLanguage(saved);
+        })();
 
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
             if (input.type === "password") {
                 input.type = "text";
-                btn.textContent = "Hide";
+                btn.textContent = t("hide");
             } else {
                 input.type = "password";
-                btn.textContent = "Show";
+                btn.textContent = t("show");
             }
         }
 
@@ -238,6 +357,7 @@
             // and ideally its own "ad finished" callback you can combine with
             // the timer below.
             frameWrap.innerHTML = '<div style="color:#888;display:flex;align-items:center;justify-content:center;height:100%;">Ad plays here</div>';
+            statusEl.textContent = t("watching_ad");
 
             adWasVisible = document.visibilityState === "visible";
             adVisibilityHandler = () => {
@@ -255,7 +375,7 @@
 
                 if (elapsed >= minWatchSeconds) {
                     clearInterval(timer);
-                    statusEl.textContent = "Claiming reward...";
+                    statusEl.textContent = t("claiming_reward");
                     finishAd(token);
                 }
             }, 1000);
@@ -294,16 +414,16 @@
         function startCooldown(button) {
             button.disabled = true;
             let timeLeft = COOLDOWN_TIME;
-            button.innerText = `Wait ${timeLeft}s...`;
+            button.innerText = t("wait_seconds").replace("{s}", timeLeft);
 
             const timer = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
-                    button.innerText = `Wait ${timeLeft}s...`;
+                    button.innerText = t("wait_seconds").replace("{s}", timeLeft);
                 } else {
                     clearInterval(timer);
                     button.disabled = false;
-                    button.innerText = "Watch Ad (+$0.05)";
+                    button.innerText = t("watch_ad");
                 }
             }, 1000);
         }
