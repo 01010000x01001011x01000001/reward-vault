@@ -17,7 +17,7 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 DB_FILE = "database.db"
 
 # Minimum seconds required between ad rewards (spam limit)
-AD_COOLDOWN_SECONDS = 15
+AD_COOLDOWN_SECONDS = 5
 
 # Minimum seconds the ad must be open (visible) before a reward can be claimed.
 # This should match/exceed the real duration of whatever ad unit you embed.
