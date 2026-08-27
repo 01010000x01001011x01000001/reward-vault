@@ -71,6 +71,41 @@
         .btn-ad:hover { background: #218838; }
         .logout-link { color: #ff6b6b; text-decoration: none; display: inline-block; margin-top: 10px; }
         .hp-field { display: none !important; }
+
+        .ad-modal-backdrop {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .ad-modal-backdrop.open { display: flex; }
+        .ad-modal {
+            background: #1e1e1e;
+            border-radius: 8px;
+            width: 90%; max-width: 460px;
+            padding: 16px;
+            text-align: center;
+        }
+        .ad-frame-wrap {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .ad-frame-wrap iframe { width: 100%; height: 100%; border: 0; }
+        .ad-progress-track {
+            width: 100%; height: 8px;
+            background: #333; border-radius: 4px;
+            overflow: hidden; margin-bottom: 10px;
+        }
+        .ad-progress-fill {
+            height: 100%; width: 0%;
+            background: #28a745;
+            transition: width 1s linear;
+        }
     </style>
 </head>
 <body>
@@ -138,9 +173,18 @@
     </div>
     {% endif %}
 
+    <!-- Ad Modal: the ad plays IN the page, not a popup, so real watch time can be tracked -->
+    <div class="ad-modal-backdrop" id="ad-modal-backdrop">
+        <div class="ad-modal">
+            <div class="ad-frame-wrap" id="ad-frame-wrap"></div>
+            <div class="ad-progress-track"><div class="ad-progress-fill" id="ad-progress-fill"></div></div>
+            <p id="ad-modal-status">Watching ad...</p>
+        </div>
+    </div>
+
     <script>
-        const MONETAG_DIRECT_LINK = "https://omg10.com/4/11485039";
-        const COOLDOWN_TIME = 15; // Cooldown in seconds
+        const COOLDOWN_TIME = 15; // must match AD_COOLDOWN_SECONDS server-side
+        const MIN_WATCH_SECONDS = 20; // must match MIN_WATCH_SECONDS server-side
 
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
@@ -153,29 +197,82 @@
             }
         }
 
+        let adWasVisible = true;
+        let adVisibilityHandler = null;
+
         function startAd(event) {
             if (event) event.preventDefault();
 
-            // 1. BOT PROTECTION: Ensure the click was performed by an actual human user
+            // BOT PROTECTION: Ensure the click was performed by an actual human user
             if (event && !event.isTrusted) {
                 alert("Automated click detected.");
                 return;
             }
 
             const adBtn = document.getElementById("ad-btn");
+            adBtn.disabled = true;
 
-            // 2. ADBLOCK PROTECTION: Verify pop-up was allowed
-            const adWindow = window.open(MONETAG_DIRECT_LINK, '_blank');
-            if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
-                alert("Ad popup was blocked! Disable your ad blocker to allow popups to earn rewards.");
-                return;
-            }
+            // Step 1: ask the server for permission + a one-time token for this ad impression
+            fetch('/ad/start', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.message || 'Error occurred'); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    playAd(data.token, data.min_watch_seconds || MIN_WATCH_SECONDS);
+                })
+                .catch(err => {
+                    adBtn.disabled = false;
+                    alert(err.message || "Could not start ad.");
+                });
+        }
 
-            // 3. AUTOCLICK PROTECTION: Disable button & start local timer immediately
-            startCooldown(adBtn);
+        function playAd(token, minWatchSeconds) {
+            const backdrop = document.getElementById("ad-modal-backdrop");
+            const frameWrap = document.getElementById("ad-frame-wrap");
+            const progressFill = document.getElementById("ad-progress-fill");
+            const statusEl = document.getElementById("ad-modal-status");
 
-            // 4. Request backend reward
-            fetch('/watch-ad', { method: 'POST' })
+            // TODO: replace with your real rewarded-ad network's embed/SDK call.
+            // Whatever network you integrate should give you an iframe/div embed
+            // and ideally its own "ad finished" callback you can combine with
+            // the timer below.
+            frameWrap.innerHTML = '<div style="color:#888;display:flex;align-items:center;justify-content:center;height:100%;">Ad plays here</div>';
+
+            adWasVisible = document.visibilityState === "visible";
+            adVisibilityHandler = () => {
+                if (document.visibilityState !== "visible") adWasVisible = false;
+            };
+            document.addEventListener("visibilitychange", adVisibilityHandler);
+
+            backdrop.classList.add("open");
+
+            let elapsed = 0;
+            const timer = setInterval(() => {
+                elapsed++;
+                const pct = Math.min(100, (elapsed / minWatchSeconds) * 100);
+                progressFill.style.width = pct + "%";
+
+                if (elapsed >= minWatchSeconds) {
+                    clearInterval(timer);
+                    statusEl.textContent = "Claiming reward...";
+                    finishAd(token);
+                }
+            }, 1000);
+        }
+
+        function finishAd(token) {
+            const backdrop = document.getElementById("ad-modal-backdrop");
+            const adBtn = document.getElementById("ad-btn");
+            document.removeEventListener("visibilitychange", adVisibilityHandler);
+
+            fetch('/ad/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token, was_visible: adWasVisible })
+            })
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(err => { throw new Error(err.message || 'Error occurred'); });
@@ -189,6 +286,10 @@
                 })
                 .catch(err => {
                     alert(err.message || "Could not claim reward.");
+                })
+                .finally(() => {
+                    backdrop.classList.remove("open");
+                    startCooldown(adBtn);
                 });
         }
 
