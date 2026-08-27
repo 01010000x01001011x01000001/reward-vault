@@ -6,20 +6,49 @@
     <title>Reward Vault</title>
 
     <style>
+        :root {
+            --bg: #121212;
+            --text: #ffffff;
+            --card-bg: #1e1e1e;
+            --border: #333333;
+            --input-bg: #2a2a2a;
+            --muted: #aaaaaa;
+            --shadow: rgba(0,0,0,0.3);
+            --btn-disabled-bg: #444444;
+            --btn-disabled-text: #888888;
+            --modal-backdrop: rgba(0,0,0,0.75);
+            --track-bg: #333333;
+            --ad-frame-bg: #000000;
+        }
+        html.light {
+            --bg: #f4f4f6;
+            --text: #1a1a1a;
+            --card-bg: #ffffff;
+            --border: #dddddd;
+            --input-bg: #f0f0f2;
+            --muted: #666666;
+            --shadow: rgba(0,0,0,0.1);
+            --btn-disabled-bg: #cccccc;
+            --btn-disabled-text: #888888;
+            --modal-backdrop: rgba(0,0,0,0.5);
+            --track-bg: #e0e0e0;
+            --ad-frame-bg: #1a1a1a;
+        }
         body { 
             font-family: Arial, sans-serif; 
-            background: #121212; 
-            color: #ffffff; 
+            background: var(--bg); 
+            color: var(--text); 
             max-width: 500px; 
             margin: 40px auto; 
             padding: 20px; 
+            transition: background 0.2s ease, color 0.2s ease;
         }
         .card { 
-            background: #1e1e1e; 
+            background: var(--card-bg); 
             padding: 20px; 
             border-radius: 8px; 
             margin-bottom: 20px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px var(--shadow);
         }
         .input-group { 
             margin-bottom: 15px; 
@@ -29,9 +58,9 @@
             width: 100%; 
             padding: 10px; 
             border-radius: 4px; 
-            border: 1px solid #333; 
-            background: #2a2a2a; 
-            color: #fff; 
+            border: 1px solid var(--border); 
+            background: var(--input-bg); 
+            color: var(--text); 
             box-sizing: border-box; 
         }
         .pwd-container { 
@@ -44,7 +73,7 @@
             right: 10px; 
             background: none; 
             border: none; 
-            color: #aaa; 
+            color: var(--muted); 
             cursor: pointer; 
             font-size: 0.85rem; 
         }
@@ -66,7 +95,7 @@
             cursor: pointer; 
         }
         button.btn:hover { background: #0056b3; }
-        button:disabled { background: #444 !important; cursor: not-allowed !important; color: #888 !important; }
+        button:disabled { background: var(--btn-disabled-bg) !important; cursor: not-allowed !important; color: var(--btn-disabled-text) !important; }
         .btn-ad { background: #28a745; margin-top: 10px; }
         .btn-ad:hover { background: #218838; }
         .logout-link { color: #ff6b6b; text-decoration: none; display: inline-block; margin-top: 10px; }
@@ -75,13 +104,13 @@
         .ad-modal-backdrop {
             display: none;
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
+            background: var(--modal-backdrop);
             align-items: center; justify-content: center;
             z-index: 1000;
         }
         .ad-modal-backdrop.open { display: flex; }
         .ad-modal {
-            background: #1e1e1e;
+            background: var(--card-bg);
             border-radius: 8px;
             width: 90%; max-width: 460px;
             padding: 16px;
@@ -90,7 +119,7 @@
         .ad-frame-wrap {
             width: 100%;
             aspect-ratio: 16 / 9;
-            background: #000;
+            background: var(--ad-frame-bg);
             border-radius: 4px;
             overflow: hidden;
             margin-bottom: 12px;
@@ -98,7 +127,7 @@
         .ad-frame-wrap iframe { width: 100%; height: 100%; border: 0; }
         .ad-progress-track {
             width: 100%; height: 8px;
-            background: #333; border-radius: 4px;
+            background: var(--track-bg); border-radius: 4px;
             overflow: hidden; margin-bottom: 10px;
         }
         .ad-progress-fill {
@@ -106,23 +135,31 @@
             background: #28a745;
             transition: width 1s linear;
         }
-        .lang-switch {
-            display: flex; justify-content: flex-end; margin-bottom: 10px;
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; gap: 10px;
         }
         .lang-switch select {
-            background: #2a2a2a; color: #fff; border: 1px solid #333;
+            background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
             border-radius: 4px; padding: 6px 8px; font-size: 0.85rem;
+        }
+        .theme-toggle-btn {
+            background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
+            border-radius: 4px; padding: 6px 10px; font-size: 0.85rem; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div class="lang-switch">
-        <select id="lang-select" onchange="setLanguage(this.value)">
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-            <option value="es">Español</option>
-        </select>
+    <div class="top-bar">
+        <button type="button" class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div class="lang-switch">
+            <select id="lang-select" onchange="setLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
     </div>
 
     <h2 data-i18n="title">Reward Vault</h2>
@@ -301,6 +338,48 @@
             if (!TRANSLATIONS[saved]) saved = "en";
             document.getElementById("lang-select").value = saved;
             applyLanguage(saved);
+        })();
+
+        // --- Theme (light/dark) ---
+        // Server tells us the logged-in user's saved preference (defaults to dark, 1).
+        // Guests fall back to localStorage, defaulting to dark as well.
+        const IS_LOGGED_IN = {{ 'true' if user.id != 0 else 'false' }};
+        const SERVER_THEME_DARK = {{ 'true' if user.theme_dark else 'false' }};
+
+        function applyTheme(isDark) {
+            document.documentElement.classList.toggle("light", !isDark);
+            const btn = document.getElementById("theme-toggle");
+            if (btn) btn.textContent = isDark ? "🌙" : "☀️";
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains("light"); // currently light -> switching to dark
+            applyTheme(isDark);
+
+            if (IS_LOGGED_IN) {
+                fetch('/theme/set', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dark: isDark })
+                }).catch(() => { /* non-critical if this fails */ });
+            } else {
+                try {
+                    localStorage.setItem("reward_vault_theme_dark", isDark ? "1" : "0");
+                } catch (e) { /* storage unavailable, ignore */ }
+            }
+        }
+
+        (function initTheme() {
+            let isDark = true; // dark is the default
+            if (IS_LOGGED_IN) {
+                isDark = SERVER_THEME_DARK;
+            } else {
+                try {
+                    const saved = localStorage.getItem("reward_vault_theme_dark");
+                    if (saved !== null) isDark = saved === "1";
+                } catch (e) { /* storage unavailable, default to dark */ }
+            }
+            applyTheme(isDark);
         })();
 
         function togglePassword(inputId, btn) {
