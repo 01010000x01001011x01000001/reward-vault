@@ -235,7 +235,6 @@
     <script>
         const COOLDOWN_TIME = 5; // must match AD_COOLDOWN_SECONDS server-side
         const MIN_WATCH_SECONDS = 20; // must match MIN_WATCH_SECONDS server-side
-        const ABANDON_GRACE_MS = 2500; // leave the tab longer than this and the ad is cancelled
 
         const TRANSLATIONS = {
             en: {
@@ -257,7 +256,6 @@
                 watching_ad: "Watching ad...",
                 claiming_reward: "Claiming reward...",
                 wait_seconds: "Wait {s}s...",
-                ad_cancelled: "Ad cancelled — you left the page too long.",
             },
             ru: {
                 title: "Reward Vault",
@@ -278,7 +276,6 @@
                 watching_ad: "Просмотр рекламы...",
                 claiming_reward: "Получение награды...",
                 wait_seconds: "Подождите {s}с...",
-                ad_cancelled: "Реклама отменена — вы слишком долго отсутствовали на странице.",
             },
             es: {
                 title: "Reward Vault",
@@ -299,7 +296,6 @@
                 watching_ad: "Viendo anuncio...",
                 claiming_reward: "Reclamando recompensa...",
                 wait_seconds: "Espera {s}s...",
-                ad_cancelled: "Anuncio cancelado: abandonaste la página demasiado tiempo.",
             },
         };
 
@@ -443,29 +439,8 @@
             statusEl.textContent = t("watching_ad");
 
             adWasVisible = document.visibilityState === "visible";
-            let hiddenSince = null;
-            let abandonTimeout = null;
-            let aborted = false;
-
             adVisibilityHandler = () => {
-                if (document.visibilityState !== "visible") {
-                    hiddenSince = Date.now();
-                    // Give a short grace period (e.g. a quick alt-tab or notification swipe)
-                    // before treating it as the user actually leaving the ad.
-                    abandonTimeout = setTimeout(() => {
-                        if (document.visibilityState !== "visible" && !aborted) {
-                            aborted = true;
-                            adWasVisible = false;
-                            abortAd(token, timer);
-                        }
-                    }, ABANDON_GRACE_MS);
-                } else {
-                    if (abandonTimeout) {
-                        clearTimeout(abandonTimeout);
-                        abandonTimeout = null;
-                    }
-                    hiddenSince = null;
-                }
+                if (document.visibilityState !== "visible") adWasVisible = false;
             };
             document.addEventListener("visibilitychange", adVisibilityHandler);
 
@@ -479,29 +454,10 @@
 
                 if (elapsed >= minWatchSeconds) {
                     clearInterval(timer);
-                    if (abandonTimeout) clearTimeout(abandonTimeout);
-                    if (!aborted) {
-                        statusEl.textContent = t("claiming_reward");
-                        finishAd(token);
-                    }
+                    statusEl.textContent = t("claiming_reward");
+                    finishAd(token);
                 }
             }, 1000);
-        }
-
-        function abortAd(token, timer) {
-            clearInterval(timer);
-            document.removeEventListener("visibilitychange", adVisibilityHandler);
-
-            const backdrop = document.getElementById("ad-modal-backdrop");
-            const adBtn = document.getElementById("ad-btn");
-
-            backdrop.classList.remove("open");
-            adBtn.disabled = false;
-            adBtn.innerText = t("watch_ad");
-
-            // No claim request is sent: the token simply goes unused and is
-            // replaced next time /ad/start is called, so nothing to clean up server-side.
-            alert(t("ad_cancelled"));
         }
 
         function finishAd(token) {
