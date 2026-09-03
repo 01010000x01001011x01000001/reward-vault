@@ -99,6 +99,7 @@
         .btn-ad { background: #28a745; margin-top: 10px; }
         .btn-ad:hover { background: #218838; }
         .logout-link { color: #ff6b6b; text-decoration: none; display: inline-block; margin-top: 10px; }
+        .login-error { color: #ff6b6b; font-size: 0.9rem; margin: -8px 0 15px 0; }
         .hp-field { display: none !important; }
 
         .ad-modal-backdrop {
@@ -194,6 +195,10 @@
                 <button type="button" class="toggle-pwd" onclick="togglePassword('login-pwd', this)" data-i18n="show">Show</button>
             </div>
 
+            {% if login_error %}
+            <p class="login-error" data-i18n="login_error_{{ login_error }}">{{ login_error }}</p>
+            {% endif %}
+
             <label class="checkbox-group">
                 <input type="checkbox" name="remember" value="true"> <span data-i18n="remember_me">Remember me</span>
             </label>
@@ -235,6 +240,7 @@
     <script>
         const COOLDOWN_TIME = 5; // must match AD_COOLDOWN_SECONDS server-side
         const MIN_WATCH_SECONDS = 20; // must match MIN_WATCH_SECONDS server-side
+        const ABANDON_GRACE_MS = 2500; // leave the tab longer than this and the ad is cancelled
 
         const TRANSLATIONS = {
             en: {
@@ -244,6 +250,8 @@
                 watch_ad: "Watch Ad (+$0.05)",
                 logout: "Log Out",
                 login_title: "Login",
+                login_error_no_account: "No account found with that username.",
+                login_error_wrong_password: "Incorrect password.",
                 default_admin: "Default Admin: <b>admin</b> / <b>admin123</b>",
                 username_placeholder: "Username",
                 password_placeholder: "Password",
@@ -256,6 +264,7 @@
                 watching_ad: "Watching ad...",
                 claiming_reward: "Claiming reward...",
                 wait_seconds: "Wait {s}s...",
+                ad_cancelled: "Ad cancelled — you left the page too long.",
             },
             ru: {
                 title: "Reward Vault",
@@ -264,6 +273,8 @@
                 watch_ad: "Смотреть рекламу (+$0.05)",
                 logout: "Выйти",
                 login_title: "Вход",
+                login_error_no_account: "Аккаунт с таким именем не найден.",
+                login_error_wrong_password: "Неверный пароль.",
                 default_admin: "Админ по умолчанию: <b>admin</b> / <b>admin123</b>",
                 username_placeholder: "Имя пользователя",
                 password_placeholder: "Пароль",
@@ -276,6 +287,7 @@
                 watching_ad: "Просмотр рекламы...",
                 claiming_reward: "Получение награды...",
                 wait_seconds: "Подождите {s}с...",
+                ad_cancelled: "Реклама отменена — вы слишком долго отсутствовали на странице.",
             },
             es: {
                 title: "Reward Vault",
@@ -284,6 +296,8 @@
                 watch_ad: "Ver anuncio (+$0.05)",
                 logout: "Cerrar sesión",
                 login_title: "Iniciar sesión",
+                login_error_no_account: "No se encontró ninguna cuenta con ese nombre de usuario.",
+                login_error_wrong_password: "Contraseña incorrecta.",
                 default_admin: "Admin predeterminado: <b>admin</b> / <b>admin123</b>",
                 username_placeholder: "Usuario",
                 password_placeholder: "Contraseña",
@@ -296,6 +310,7 @@
                 watching_ad: "Viendo anuncio...",
                 claiming_reward: "Reclamando recompensa...",
                 wait_seconds: "Espera {s}s...",
+                ad_cancelled: "Anuncio cancelado: abandonaste la página demasiado tiempo.",
             },
         };
 
@@ -439,8 +454,29 @@
             statusEl.textContent = t("watching_ad");
 
             adWasVisible = document.visibilityState === "visible";
+            let hiddenSince = null;
+            let abandonTimeout = null;
+            let aborted = false;
+
             adVisibilityHandler = () => {
-                if (document.visibilityState !== "visible") adWasVisible = false;
+                if (document.visibilityState !== "visible") {
+                    hiddenSince = Date.now();
+                    // Give a short grace period (e.g. a quick alt-tab or notification swipe)
+                    // before treating it as the user actually leaving the ad.
+                    abandonTimeout = setTimeout(() => {
+                        if (document.visibilityState !== "visible" && !aborted) {
+                            aborted = true;
+                            adWasVisible = false;
+                            abortAd(token, timer);
+                        }
+                    }, ABANDON_GRACE_MS);
+                } else {
+                    if (abandonTimeout) {
+                        clearTimeout(abandonTimeout);
+                        abandonTimeout = null;
+                    }
+                    hiddenSince = null;
+                }
             };
             document.addEventListener("visibilitychange", adVisibilityHandler);
 
@@ -454,10 +490,29 @@
 
                 if (elapsed >= minWatchSeconds) {
                     clearInterval(timer);
-                    statusEl.textContent = t("claiming_reward");
-                    finishAd(token);
+                    if (abandonTimeout) clearTimeout(abandonTimeout);
+                    if (!aborted) {
+                        statusEl.textContent = t("claiming_reward");
+                        finishAd(token);
+                    }
                 }
             }, 1000);
+        }
+
+        function abortAd(token, timer) {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", adVisibilityHandler);
+
+            const backdrop = document.getElementById("ad-modal-backdrop");
+            const adBtn = document.getElementById("ad-btn");
+
+            backdrop.classList.remove("open");
+            adBtn.disabled = false;
+            adBtn.innerText = t("watch_ad");
+
+            // No claim request is sent: the token simply goes unused and is
+            // replaced next time /ad/start is called, so nothing to clean up server-side.
+            alert(t("ad_cancelled"));
         }
 
         function finishAd(token) {
