@@ -74,7 +74,11 @@ def index():
             else:
                 session.pop("user_id", None)
 
-    return render_template("index.html", user=user)
+    login_error = request.args.get("login_error")
+    if login_error not in ("no_account", "wrong_password"):
+        login_error = None
+
+    return render_template("index.html", user=user, login_error=login_error)
 
 @app.route("/theme/set", methods=["POST"])
 def theme_set():
@@ -134,9 +138,14 @@ def login():
             (username,)
         ).fetchone()
 
-        if user and check_password_hash(user["password"], password):
-            session["user_id"] = user["id"]
-            session.permanent = bool(remember)
+        if not user:
+            return redirect(url_for("index", login_error="no_account"))
+
+        if not check_password_hash(user["password"], password):
+            return redirect(url_for("index", login_error="wrong_password"))
+
+        session["user_id"] = user["id"]
+        session.permanent = bool(remember)
 
     return redirect(url_for("index"))
 
