@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Vault</title>
+    <title>Dimewell</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD76A%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23F2A413%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22196%22%20rx%3D%22104%22%20ry%3D%2228%22%20fill%3D%22none%22%20stroke%3D%22%233B9BFF%22%20stroke-opacity%3D%22.35%22%20stroke-width%3D%227%22/%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22196%22%20rx%3D%2270%22%20ry%3D%2218%22%20fill%3D%22none%22%20stroke%3D%22%233B9BFF%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%227%22/%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22196%22%20rx%3D%2236%22%20ry%3D%229%22%20fill%3D%22none%22%20stroke%3D%22%233B9BFF%22%20stroke-width%3D%227%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2292%22%20r%3D%2258%22%20fill%3D%22url%28%23g%29%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2292%22%20r%3D%2245%22%20fill%3D%22none%22%20stroke%3D%22%23B9780A%22%20stroke-opacity%3D%22.55%22%20stroke-width%3D%225%22/%3E%3Cpath%20d%3D%22M76%2074%20A46%2046%200%200%201%20106%2050%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-opacity%3D%22.5%22%20stroke-width%3D%227%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E">
 
     <style>
         :root {
@@ -148,6 +149,14 @@
             background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
             border-radius: 4px; padding: 6px 10px; font-size: 0.85rem; cursor: pointer;
         }
+
+        .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 16px 0; }
+        .brand-logo { width: 48px; height: 48px; flex: none; }
+        .brand-accent { color: #3b9bff; }
+        .pwd-rules { list-style: none; margin: -6px 0 15px 0; padding: 0; font-size: 0.85rem; color: var(--muted); }
+        .pwd-rules li::before { content: "\25CB  "; }
+        .pwd-rules li.ok { color: #28a745; }
+        .pwd-rules li.ok::before { content: "\2713  "; }
     </style>
 </head>
 <body>
@@ -163,7 +172,10 @@
         </div>
     </div>
 
-    <h2 data-i18n="title">Reward Vault</h2>
+    <h2 class="brand">
+        <svg class="brand-logo" viewBox="0 0 240 240" aria-hidden="true"><defs><linearGradient id="dwGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD76A"/><stop offset="1" stop-color="#F2A413"/></linearGradient></defs><ellipse cx="120" cy="196" rx="104" ry="28" fill="none" stroke="#3B9BFF" stroke-opacity=".35" stroke-width="7"/><ellipse cx="120" cy="196" rx="70" ry="18" fill="none" stroke="#3B9BFF" stroke-opacity=".65" stroke-width="7"/><ellipse cx="120" cy="196" rx="36" ry="9" fill="none" stroke="#3B9BFF" stroke-width="7"/><circle cx="120" cy="92" r="58" fill="url(#dwGold)"/><circle cx="120" cy="92" r="45" fill="none" stroke="#B9780A" stroke-opacity=".55" stroke-width="5"/><path d="M76 74 A46 46 0 0 1 106 50" fill="none" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="7" stroke-linecap="round"/></svg>
+        <span data-i18n="title">Dime<span class="brand-accent">well</span></span>
+    </h2>
 
     {% if user.id != 0 %}
     <!-- User Header & Balance (only shown once logged in) -->
@@ -181,7 +193,6 @@
     <!-- Login Form -->
     <div class="card">
         <h3 data-i18n="login_title">Login</h3>
-        <p><small data-i18n="default_admin">Default Admin: <b>admin</b> / <b>admin123</b></small></p>
         <form action="/login" method="POST">
             <!-- Bot Honeypot Field -->
             <input type="text" name="website_hp" class="hp-field" tabindex="-1" autocomplete="off">
@@ -219,9 +230,17 @@
             </div>
             
             <div class="input-group pwd-container">
-                <input type="password" id="reg-pwd" name="password" data-i18n-placeholder="password_placeholder" placeholder="Password" required>
+                <input type="password" id="reg-pwd" name="password" data-i18n-placeholder="password_placeholder" placeholder="Password" minlength="7" autocomplete="new-password" oninput="updatePasswordRules()" required>
                 <button type="button" class="toggle-pwd" onclick="togglePassword('reg-pwd', this)" data-i18n="show">Show</button>
             </div>
+
+            <ul class="pwd-rules" id="pwd-rules">
+                <li id="rule-len" data-i18n="pwd_rule_len">Longer than 6 characters</li>
+            </ul>
+
+            {% if register_error %}
+            <p class="login-error" data-i18n="register_error_{{ register_error }}">{{ register_error }}</p>
+            {% endif %}
 
             <button type="submit" class="btn" data-i18n="register">Register</button>
         </form>
@@ -244,7 +263,7 @@
 
         const TRANSLATIONS = {
             en: {
-                title: "Reward Vault",
+                title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Welcome,",
                 balance_label: "Balance:",
                 watch_ad: "Watch Ad (+$0.05)",
@@ -252,7 +271,9 @@
                 login_title: "Login",
                 login_error_no_account: "No account found with that username.",
                 login_error_wrong_password: "Incorrect password.",
-                default_admin: "Default Admin: <b>admin</b> / <b>admin123</b>",
+                pwd_rule_len: "Longer than 6 characters",
+                register_error_password_short: "Password must be longer than 6 characters.",
+                register_error_username_taken: "That username is already taken.",
                 username_placeholder: "Username",
                 password_placeholder: "Password",
                 show: "Show",
@@ -267,7 +288,7 @@
                 ad_cancelled: "Ad cancelled — you left the page too long.",
             },
             ru: {
-                title: "Reward Vault",
+                title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Добро пожаловать,",
                 balance_label: "Баланс:",
                 watch_ad: "Смотреть рекламу (+$0.05)",
@@ -275,7 +296,9 @@
                 login_title: "Вход",
                 login_error_no_account: "Аккаунт с таким именем не найден.",
                 login_error_wrong_password: "Неверный пароль.",
-                default_admin: "Админ по умолчанию: <b>admin</b> / <b>admin123</b>",
+                pwd_rule_len: "Длиннее 6 символов",
+                register_error_password_short: "Пароль должен быть длиннее 6 символов.",
+                register_error_username_taken: "Это имя пользователя уже занято.",
                 username_placeholder: "Имя пользователя",
                 password_placeholder: "Пароль",
                 show: "Показать",
@@ -290,7 +313,7 @@
                 ad_cancelled: "Реклама отменена — вы слишком долго отсутствовали на странице.",
             },
             es: {
-                title: "Reward Vault",
+                title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Bienvenido,",
                 balance_label: "Saldo:",
                 watch_ad: "Ver anuncio (+$0.05)",
@@ -298,7 +321,9 @@
                 login_title: "Iniciar sesión",
                 login_error_no_account: "No se encontró ninguna cuenta con ese nombre de usuario.",
                 login_error_wrong_password: "Contraseña incorrecta.",
-                default_admin: "Admin predeterminado: <b>admin</b> / <b>admin123</b>",
+                pwd_rule_len: "Más de 6 caracteres",
+                register_error_password_short: "La contraseña debe tener más de 6 caracteres.",
+                register_error_username_taken: "Ese nombre de usuario ya está en uso.",
                 username_placeholder: "Usuario",
                 password_placeholder: "Contraseña",
                 show: "Mostrar",
@@ -335,7 +360,7 @@
 
         function setLanguage(lang) {
             try {
-                localStorage.setItem("reward_vault_lang", lang);
+                localStorage.setItem("dimewell_lang", lang);
             } catch (e) { /* storage unavailable, ignore */ }
             applyLanguage(lang);
         }
@@ -348,7 +373,7 @@
         (function initLanguage() {
             let saved = "en";
             try {
-                saved = localStorage.getItem("reward_vault_lang") || "en";
+                saved = localStorage.getItem("dimewell_lang") || "en";
             } catch (e) { /* storage unavailable, default to en */ }
             if (!TRANSLATIONS[saved]) saved = "en";
             document.getElementById("lang-select").value = saved;
@@ -379,7 +404,7 @@
                 }).catch(() => { /* non-critical if this fails */ });
             } else {
                 try {
-                    localStorage.setItem("reward_vault_theme_dark", isDark ? "1" : "0");
+                    localStorage.setItem("dimewell_theme_dark", isDark ? "1" : "0");
                 } catch (e) { /* storage unavailable, ignore */ }
             }
         }
@@ -390,12 +415,21 @@
                 isDark = SERVER_THEME_DARK;
             } else {
                 try {
-                    const saved = localStorage.getItem("reward_vault_theme_dark");
+                    const saved = localStorage.getItem("dimewell_theme_dark");
                     if (saved !== null) isDark = saved === "1";
                 } catch (e) { /* storage unavailable, default to dark */ }
             }
             applyTheme(isDark);
         })();
+
+        const MIN_PASSWORD_LENGTH = 7; // must match MIN_PASSWORD_LENGTH server-side (longer than 6)
+
+        function updatePasswordRules() {
+            const pwd = document.getElementById("reg-pwd");
+            const rule = document.getElementById("rule-len");
+            if (!pwd || !rule) return;
+            rule.classList.toggle("ok", pwd.value.length >= MIN_PASSWORD_LENGTH);
+        }
 
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
