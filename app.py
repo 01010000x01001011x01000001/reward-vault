@@ -26,6 +26,9 @@ MIN_WATCH_SECONDS = 20
 # How long an issued ad-watch token stays valid before it expires (anti-replay)
 TOKEN_TTL_SECONDS = 120
 
+# Passwords must be LONGER than 6 characters, i.e. at least 7.
+MIN_PASSWORD_LENGTH = 7
+
 def get_db():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -48,13 +51,14 @@ def init_db():
         if "theme_dark" not in existing_cols:
             conn.execute("ALTER TABLE users ADD COLUMN theme_dark INTEGER NOT NULL DEFAULT 1")
 
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE username = ?", ("admin",))
-        if not cursor.fetchone():
-            cursor.execute(
-                "INSERT INTO users (username, password, balance, theme_dark) VALUES (?, ?, ?, ?)",
-                ("admin", generate_password_hash("admin123"), 50.00, 1)
-            )
+        # The built-in "admin" account (password "admin123") is no longer created.
+        # If an older database still contains that default account, remove it.
+        # An account that is merely named "admin" but has a different password is kept.
+        legacy = conn.execute(
+            "SELECT id, password FROM users WHERE username = ?", ("admin",)
+        ).fetchone()
+        if legacy and check_password_hash(legacy["password"], "admin123"):
+            conn.execute("DELETE FROM users WHERE id = ?", (legacy["id"],))
         conn.commit()
 
 init_db()
@@ -78,7 +82,11 @@ def index():
     if login_error not in ("no_account", "wrong_password"):
         login_error = None
 
-    return render_template("index.html", user=user, login_error=login_error)
+    register_error = request.args.get("register_error")
+    if register_error not in ("password_short", "username_taken"):
+        register_error = None
+
+    return render_template("index.html", user=user, login_error=login_error, register_error=register_error)
 
 @app.route("/theme/set", methods=["POST"])
 def theme_set():
@@ -106,6 +114,9 @@ def register():
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "").strip()
 
+    if password and len(password) < MIN_PASSWORD_LENGTH:
+        return redirect(url_for("index", register_error="password_short"))
+
     if username and password:
         try:
             with get_db() as conn:
@@ -118,7 +129,7 @@ def register():
                 session["user_id"] = cursor.lastrowid
                 session.permanent = True
         except sqlite3.IntegrityError:
-            pass 
+            return redirect(url_for("index", register_error="username_taken")) 
 
     return redirect(url_for("index"))
 
