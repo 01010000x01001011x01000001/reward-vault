@@ -29,6 +29,23 @@ TOKEN_TTL_SECONDS = 120
 # Passwords must be LONGER than 6 characters, i.e. at least 7.
 MIN_PASSWORD_LENGTH = 7
 
+# ---- Charity model -------------------------------------------------------
+# Share of the ad revenue that is pledged to the cause the user picked.
+# This number is shown to users on the site, so it must be the real figure.
+CHARITY_SHARE = 0.50
+
+# Rough revenue per completed view, used ONLY for the "raised (est.)" display.
+# Replace it with real numbers from your ad network once you have them.
+EST_REVENUE_PER_VIEW = 0.006
+
+# Cause ids. Display names are translated in templates/index.html (cause_<id>).
+CAUSES = ("hunger", "disaster", "health", "education")
+DEFAULT_CAUSE = "hunger"
+
+# Who actually receives each cause's money. Set real, named recipients
+# before launch; monthly_report.py prints these next to the amounts.
+RECIPIENTS = {c: "SET A NAMED RECIPIENT" for c in CAUSES}
+
 def get_db():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -46,10 +63,22 @@ def init_db():
             )
         ''')
 
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS ad_views (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                cause TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now'))
+            )
+        ''')
+
         # Migration: add theme_dark to existing databases created before this column existed
         existing_cols = [row["name"] for row in conn.execute("PRAGMA table_info(users)")]
         if "theme_dark" not in existing_cols:
             conn.execute("ALTER TABLE users ADD COLUMN theme_dark INTEGER NOT NULL DEFAULT 1")
+
+        if "cause" not in existing_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN cause TEXT NOT NULL DEFAULT 'hunger'")
 
         # The built-in "admin" account (password "admin123") is no longer created.
         # If an older database still contains that default account, remove it.
@@ -65,16 +94,20 @@ init_db()
 
 @app.route("/")
 def index():
-    user = {"id": 0, "username": "Guest", "balance": 0.00, "theme_dark": 1}
+    user = {"id": 0, "username": "Guest", "balance": 0.00, "theme_dark": 1, "cause": DEFAULT_CAUSE, "views": 0, "raised": 0.0}
     
     if "user_id" in session:
         with get_db() as conn:
             db_user = conn.execute(
-                "SELECT id, username, balance, theme_dark FROM users WHERE id = ?", 
+                "SELECT id, username, balance, theme_dark, cause FROM users WHERE id = ?", 
                 (session["user_id"],)
             ).fetchone()
             if db_user:
                 user = dict(db_user)
+                user["views"] = conn.execute(
+                    "SELECT COUNT(*) FROM ad_views WHERE user_id = ?", (db_user["id"],)
+                ).fetchone()[0]
+                user["raised"] = user["views"] * EST_REVENUE_PER_VIEW * CHARITY_SHARE
             else:
                 session.pop("user_id", None)
 
@@ -86,7 +119,20 @@ def index():
     if register_error not in ("password_short", "username_taken"):
         register_error = None
 
-    return render_template("index.html", user=user, login_error=login_error, register_error=register_error)
+    return render_template("index.html", user=user, login_error=login_error, register_error=register_error,
+                           causes=CAUSES, charity_percent=round(CHARITY_SHARE * 100))
+
+@app.route("/cause/set", methods=["POST"])
+def cause_set():
+    if "user_id" not in session:
+        return jsonify({"status": "error", "message": "Not logged in."}), 401
+    cause = (request.get_json(silent=True) or {}).get("cause")
+    if cause not in CAUSES:
+        return jsonify({"status": "error", "message": "Unknown cause."}), 400
+    with get_db() as conn:
+        conn.execute("UPDATE users SET cause = ? WHERE id = ?", (cause, session["user_id"]))
+        conn.commit()
+    return jsonify({"status": "success"}), 200
 
 @app.route("/theme/set", methods=["POST"])
 def theme_set():
@@ -236,15 +282,18 @@ def ad_claim():
     session["last_ad_time"] = time.time()
 
     with get_db() as conn:
+        row = conn.execute("SELECT cause FROM users WHERE id = ?", (session["user_id"],)).fetchone()
         conn.execute(
-            "UPDATE users SET balance = balance + 0.05 WHERE id = ?",
-            (session["user_id"],)
+            "INSERT INTO ad_views (user_id, cause) VALUES (?, ?)",
+            (session["user_id"], row["cause"] if row else DEFAULT_CAUSE)
         )
         conn.commit()
-        user = conn.execute("SELECT balance FROM users WHERE id = ?", (session["user_id"],)).fetchone()
-        new_balance = user["balance"] if user else 0.00
+        views = conn.execute(
+            "SELECT COUNT(*) FROM ad_views WHERE user_id = ?", (session["user_id"],)
+        ).fetchone()[0]
 
-    return jsonify({"status": "success", "new_balance": f"{new_balance:.2f}"}), 200
+    raised = views * EST_REVENUE_PER_VIEW * CHARITY_SHARE
+    return jsonify({"status": "success", "views": views, "raised": f"{raised:.2f}"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
