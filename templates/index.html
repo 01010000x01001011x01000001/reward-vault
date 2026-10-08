@@ -181,10 +181,17 @@
     <!-- User Header & Balance (only shown once logged in) -->
     <div class="card">
         <h3><span data-i18n="welcome">Welcome,</span> {{ user.username }}!</h3>
-        <p><span data-i18n="balance_label">Balance:</span> $<strong><span id="user-balance">{{ "%.2f"|format(user.balance) }}</span></strong></p>
+        <p><span data-i18n="raised_label">Raised by your views (est.):</span> $<strong><span id="user-raised">{{ "%.2f"|format(user.raised) }}</span></strong> &middot; <span id="user-views">{{ user.views }}</span> <span data-i18n="views_label">views</span></p>
+        <p>
+            <label for="cause-select" data-i18n="cause_label">Your cause:</label>
+            <select id="cause-select" onchange="setCause(this.value)">
+                {% for c in causes %}<option value="{{ c }}" {% if c == user.cause %}selected{% endif %} data-i18n="cause_{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+        </p>
+        <p><small><strong>{{ charity_percent }}%</strong> <span data-i18n="share_note">of the ad revenue from every view goes to the cause you choose.</span></small></p>
 
         <!-- Watch Ad Button -->
-        <button type="button" id="ad-btn" class="btn btn-ad" onclick="startAd(event)" data-i18n="watch_ad">Watch Ad (+$0.05)</button>
+        <button type="button" id="ad-btn" class="btn btn-ad" onclick="startAd(event)" data-i18n="watch_ad">Watch Ad</button>
 
         <br>
         <a href="/logout" class="logout-link" data-i18n="logout">Log Out</a>
@@ -266,8 +273,16 @@
                 title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Welcome,",
                 balance_label: "Balance:",
-                watch_ad: "Watch Ad (+$0.05)",
+                watch_ad: "Watch Ad",
                 logout: "Log Out",
+                raised_label: "Raised by your views (est.):",
+                views_label: "views",
+                cause_label: "Your cause:",
+                share_note: "of the ad revenue from every view goes to the cause you choose.",
+                cause_hunger: "Hunger relief",
+                cause_disaster: "Disaster relief",
+                cause_health: "Medical aid",
+                cause_education: "Education",
                 login_title: "Login",
                 login_error_no_account: "No account found with that username.",
                 login_error_wrong_password: "Incorrect password.",
@@ -291,8 +306,16 @@
                 title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Добро пожаловать,",
                 balance_label: "Баланс:",
-                watch_ad: "Смотреть рекламу (+$0.05)",
+                watch_ad: "Смотреть рекламу",
                 logout: "Выйти",
+                raised_label: "Собрано вашими просмотрами (прим.):",
+                views_label: "просмотров",
+                cause_label: "Ваша цель:",
+                share_note: "дохода от рекламы с каждого просмотра идёт на выбранную вами цель.",
+                cause_hunger: "Помощь голодающим",
+                cause_disaster: "Помощь при бедствиях",
+                cause_health: "Медицинская помощь",
+                cause_education: "Образование",
                 login_title: "Вход",
                 login_error_no_account: "Аккаунт с таким именем не найден.",
                 login_error_wrong_password: "Неверный пароль.",
@@ -316,8 +339,16 @@
                 title: 'Dime<span class="brand-accent">well</span>',
                 welcome: "Bienvenido,",
                 balance_label: "Saldo:",
-                watch_ad: "Ver anuncio (+$0.05)",
+                watch_ad: "Ver anuncio",
                 logout: "Cerrar sesión",
+                raised_label: "Recaudado con tus vistas (aprox.):",
+                views_label: "vistas",
+                cause_label: "Tu causa:",
+                share_note: "de los ingresos publicitarios de cada vista va a la causa que elijas.",
+                cause_hunger: "Ayuda contra el hambre",
+                cause_disaster: "Ayuda en desastres",
+                cause_health: "Ayuda médica",
+                cause_education: "Educación",
                 login_title: "Iniciar sesión",
                 login_error_no_account: "No se encontró ninguna cuenta con ese nombre de usuario.",
                 login_error_wrong_password: "Contraseña incorrecta.",
@@ -445,6 +476,14 @@
         let adWasVisible = true;
         let adVisibilityHandler = null;
 
+        function setCause(cause) {
+            fetch('/cause/set', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cause: cause })
+            });
+        }
+
         function startAd(event) {
             if (event) event.preventDefault();
 
@@ -567,7 +606,8 @@
                 })
                 .then(data => {
                     if (data.status === 'success') {
-                        document.getElementById('user-balance').innerText = data.new_balance;
+                        document.getElementById('user-raised').innerText = data.raised;
+                        document.getElementById('user-views').innerText = data.views;
                     }
                 })
                 .catch(err => {
